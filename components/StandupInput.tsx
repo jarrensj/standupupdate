@@ -8,10 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function StandupInput() {
   const [update, setUpdate] = useState('')
   const [savedUpdate, setSavedUpdate] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   const handleSave = () => {
     setSavedUpdate(update)
     setUpdate('')
+    setIsEditing(false)
+  }
+
+  const handleEdit = () => {
+    setUpdate(savedUpdate || '')
+    setIsEditing(true)
   }
 
   return (
@@ -28,17 +35,22 @@ export default function StandupInput() {
             onChange={(e) => setUpdate(e.target.value)}
             className="min-h-[200px] mb-4"
           />
-          <Button onClick={handleSave} disabled={!update.trim()}>Save Update</Button>
+          <Button onClick={handleSave} disabled={!update.trim()}>
+            {isEditing ? 'Save Edit' : 'Save Update'}
+          </Button>
         </CardContent>
       </Card>
 
-      {savedUpdate && (
+      {savedUpdate && !isEditing && (
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Saved Standup Update</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap">{savedUpdate}</p>
+            <div className="flex flex-col gap-4">
+              <p className="whitespace-pre-wrap">{savedUpdate}</p>
+              <Button onClick={handleEdit}>Edit Update</Button>
+            </div>
           </CardContent>
         </Card>
       )}
