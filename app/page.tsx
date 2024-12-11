@@ -1,4 +1,4 @@
-import Image from "next/image";
+import StandupInput from "../components/StandupInput";
 
 export default function Home() {
   return (
@@ -10,6 +10,7 @@ export default function Home() {
         <p className="text-lg">
           a simple tool to help you keep track of your standup updates
         </p>
+        <StandupInput />
       </main>
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
         footer
