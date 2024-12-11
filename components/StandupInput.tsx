@@ -29,6 +29,11 @@ export default function StandupInput() {
     setIsEditing(true)
   }
 
+  const handleDelete = () => {
+    localStorage.removeItem('standupUpdate')
+    setSavedUpdate(null)
+  }
+
   return (
     <div className="w-full max-w-4xl">
       <Card>
@@ -57,7 +62,12 @@ export default function StandupInput() {
           <CardContent>
             <div className="flex flex-col gap-4">
               <p className="whitespace-pre-wrap">{savedUpdate}</p>
-              <Button onClick={handleEdit}>Edit Update</Button>
+              <div className="flex gap-2">
+                <Button onClick={handleEdit}>Edit Update</Button>
+                <Button variant="destructive" onClick={handleDelete}>
+                  Delete Update
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
