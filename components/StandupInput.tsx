@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +10,15 @@ export default function StandupInput() {
   const [savedUpdate, setSavedUpdate] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
 
+  useEffect(() => {
+    const stored = localStorage.getItem('standupUpdate')
+    if (stored) {
+      setSavedUpdate(stored)
+    }
+  }, [])
+
   const handleSave = () => {
+    localStorage.setItem('standupUpdate', update)
     setSavedUpdate(update)
     setUpdate('')
     setIsEditing(false)
