@@ -7,6 +7,9 @@ export default function Home() {
         <h1 className="text-4xl font-bold">
           standup update
         </h1>
+        <p className="text-lg">
+          a simple tool to help you keep track of your standup updates
+        </p>
       </main>
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
         footer
