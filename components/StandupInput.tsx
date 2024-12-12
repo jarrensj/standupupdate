@@ -1,14 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import JSConfetti from 'js-confetti'
 
 export default function StandupInput() {
   const [update, setUpdate] = useState('')
   const [savedUpdate, setSavedUpdate] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const jsConfettiRef = useRef<JSConfetti | null>(null)
+
+  useEffect(() => {
+    jsConfettiRef.current = new JSConfetti();
+    return () => {
+      jsConfettiRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem('standupUpdate')
@@ -22,6 +31,13 @@ export default function StandupInput() {
     setSavedUpdate(update)
     setUpdate('')
     setIsEditing(false)
+    if (jsConfettiRef.current) {
+      jsConfettiRef.current.addConfetti({
+        emojis: ['🚀'],
+        emojiSize: 100,
+        confettiNumber: 24,
+      })
+    }
   }
 
   const handleEdit = () => {
