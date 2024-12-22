@@ -6,9 +6,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import JSConfetti from 'js-confetti'
 
+interface StandupUpdate {
+  text: string;
+  timestamp: string;
+}
+
 export default function StandupInput() {
   const [update, setUpdate] = useState('')
-  const [savedUpdate, setSavedUpdate] = useState<string | null>(null)
+  const [savedUpdate, setSavedUpdate] = useState<StandupUpdate | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const jsConfettiRef = useRef<JSConfetti | null>(null)
 
@@ -22,13 +27,17 @@ export default function StandupInput() {
   useEffect(() => {
     const stored = localStorage.getItem('standupUpdate')
     if (stored) {
-      setSavedUpdate(stored)
+      setSavedUpdate(JSON.parse(stored))
     }
   }, [])
 
   const handleSave = () => {
-    localStorage.setItem('standupUpdate', update)
-    setSavedUpdate(update)
+    const updateData: StandupUpdate = {
+      text: update,
+      timestamp: new Date().toLocaleString()
+    }
+    localStorage.setItem('standupUpdate', JSON.stringify(updateData))
+    setSavedUpdate(updateData)
     setUpdate('')
     setIsEditing(false)
     if (jsConfettiRef.current) {
@@ -41,7 +50,7 @@ export default function StandupInput() {
   }
 
   const handleEdit = () => {
-    setUpdate(savedUpdate || '')
+    setUpdate(savedUpdate?.text || '')
     setIsEditing(true)
   }
 
@@ -74,10 +83,11 @@ export default function StandupInput() {
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Saved Standup Update</CardTitle>
+            <CardDescription>Last updated: {savedUpdate.timestamp}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-4">
-              <p className="whitespace-pre-wrap">{savedUpdate}</p>
+              <p className="whitespace-pre-wrap">{savedUpdate.text}</p>
               <div className="flex gap-2">
                 <Button onClick={handleEdit}>Edit Update</Button>
                 <Button variant="destructive" onClick={handleDelete}>
