@@ -64,28 +64,15 @@ export default function StandupInput() {
       <Card>
         <CardHeader>
           <CardTitle>Standup Update</CardTitle>
-          <CardDescription>Type your standup update</CardDescription>
+          <CardDescription>
+            {savedUpdate && !isEditing 
+              ? `Last updated: ${savedUpdate.timestamp}`
+              : 'Type your standup update'
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Textarea
-            placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
-            value={update}
-            onChange={(e) => setUpdate(e.target.value)}
-            className="min-h-[200px] mb-4"
-          />
-          <Button onClick={handleSave} disabled={!update.trim()}>
-            {isEditing ? 'Save Edit' : 'Save Update'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {savedUpdate && !isEditing && (
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Saved Standup Update</CardTitle>
-            <CardDescription>Last updated: {savedUpdate.timestamp}</CardDescription>
-          </CardHeader>
-          <CardContent>
+          {!isEditing && savedUpdate ? (
             <div className="flex flex-col gap-4">
               <p className="whitespace-pre-wrap">{savedUpdate.text}</p>
               <div className="flex gap-2">
@@ -95,9 +82,21 @@ export default function StandupInput() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <>
+              <Textarea
+                placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
+                value={update}
+                onChange={(e) => setUpdate(e.target.value)}
+                className="min-h-[200px] mb-4"
+              />
+              <Button onClick={handleSave} disabled={!update.trim()}>
+                {isEditing ? 'Save Edit' : 'Save Update'}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
