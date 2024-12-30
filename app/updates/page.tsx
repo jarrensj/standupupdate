@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import JSConfetti from 'js-confetti';
 
@@ -25,6 +26,7 @@ export default function Updates() {
   const [newUpdate, setNewUpdate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const jsConfettiRef = useRef<JSConfetti | null>(null);
+  const [editingUpdate, setEditingUpdate] = useState<Update | null>(null);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -87,6 +89,47 @@ export default function Updates() {
     }
   };
 
+  const handleEdit = async (updatedText: string) => {
+    if (!editingUpdate || !user) return;
+    
+    setIsLoading(true);
+    const { error } = await supabase
+      .from('standupupdates')
+      .update({ text: updatedText })
+      .eq('id', editingUpdate.id)
+      .eq('user_id', user.id);
+
+    setIsLoading(false);
+
+    if (error) {
+      console.error('Error updating:', error);
+      return;
+    }
+
+    setEditingUpdate(null);
+    fetchUpdates();
+  };
+
+  const handleDelete = async (updateId: number) => {
+    if (!user) return;
+
+    setIsLoading(true);
+    const { error } = await supabase
+      .from('standupupdates')
+      .delete()
+      .eq('id', updateId)
+      .eq('user_id', user.id);
+
+    setIsLoading(false);
+
+    if (error) {
+      console.error('Error deleting:', error);
+      return;
+    }
+
+    fetchUpdates();
+  };
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <SignedIn>
@@ -120,13 +163,70 @@ export default function Updates() {
           <div className="space-y-4">
             {updates.map((update) => (
               <Card key={update.id}>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardDescription>
                     {new Date(update.created_at).toLocaleString()}
                   </CardDescription>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingUpdate(update)}
+                    >
+                      Edit
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-destructive">
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your update.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(update.id)}
+                            className="bg-destructive text-destructive-foreground"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-wrap">{update.text}</p>
+                  {editingUpdate?.id === update.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editingUpdate.text}
+                        onChange={(e) => setEditingUpdate({ ...editingUpdate, text: e.target.value })}
+                        className="min-h-[100px]"
+                      />
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => handleEdit(editingUpdate.text)}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? 'Saving...' : 'Save'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setEditingUpdate(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{update.text}</p>
+                  )}
                 </CardContent>
               </Card>
             ))}
