@@ -16,6 +16,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 interface Update {
   id: number;
   created_at: Date;
+  updated_at: Date;
   text: string;
   user_id: string;
 }
@@ -95,7 +96,10 @@ export default function Updates() {
     setIsLoading(true);
     const { error } = await supabase
       .from('standupupdates')
-      .update({ text: updatedText })
+      .update({ 
+        text: updatedText,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', editingUpdate.id)
       .eq('user_id', user.id);
 
@@ -165,7 +169,10 @@ export default function Updates() {
               <Card key={update.id}>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardDescription>
-                    {new Date(update.created_at).toLocaleString()}
+                    Created: {new Date(update.created_at).toLocaleString()}
+                    {update.updated_at && update.updated_at !== update.created_at && (
+                      <> Last edited: {new Date(update.updated_at).toLocaleString()}</>
+                    )}
                   </CardDescription>
                   <div className="flex gap-2">
                     <Button
