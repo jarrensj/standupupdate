@@ -1,17 +1,12 @@
 'use client'
 
 import { SignedIn, SignedOut, useUser } from "@clerk/nextjs";
-import { createClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import JSConfetti from 'js-confetti';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface Update {
   id: number;
@@ -43,95 +38,86 @@ export default function Updates() {
   }, [user]);
 
   const fetchUpdates = async () => {
-    const { data, error } = await supabase
-      .from('standupupdates')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const response = await fetch(`/api/updates?user_id=${user?.id}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setUpdates(data);
+    } catch (error) {
       console.error('Error fetching updates:', error);
-      return;
     }
-
-    setUpdates(data || []);
   };
 
   const handleSave = async () => {
     if (!user || !newUpdate.trim()) return;
     
     setIsLoading(true);
-    const { error } = await supabase
-      .from('standupupdates')
-      .insert([
-        {
-          text: newUpdate,
-          user_id: user.id,
-          created_at: new Date().toISOString()
-        }
-      ]);
-
-    setIsLoading(false);
-
-    if (error) {
-      console.error('Error saving update:', error);
-      return;
-    }
-
-    setNewUpdate('');
-    fetchUpdates();
-
-    if (jsConfettiRef.current) {
-      jsConfettiRef.current.addConfetti({
-        emojis: ['🚀'],
-        emojiSize: 100,
-        confettiNumber: 24,
+    try {
+      const response = await fetch('/api/updates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newUpdate, user_id: user.id }),
       });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+
+      setNewUpdate('');
+      fetchUpdates();
+
+      if (jsConfettiRef.current) {
+        jsConfettiRef.current.addConfetti({
+          emojis: ['🚀'],
+          emojiSize: 100,
+          confettiNumber: 24,
+        });
+      }
+    } catch (error) {
+      console.error('Error saving update:', error);
     }
+    setIsLoading(false);
   };
 
   const handleEdit = async (updatedText: string) => {
     if (!editingUpdate || !user) return;
     
     setIsLoading(true);
-    const { error } = await supabase
-      .from('standupupdates')
-      .update({ 
-        text: updatedText,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', editingUpdate.id)
-      .eq('user_id', user.id);
+    try {
+      const response = await fetch('/api/updates', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          id: editingUpdate.id, 
+          text: updatedText, 
+          user_id: user.id 
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
 
-    setIsLoading(false);
-
-    if (error) {
+      setEditingUpdate(null);
+      fetchUpdates();
+    } catch (error) {
       console.error('Error updating:', error);
-      return;
     }
-
-    setEditingUpdate(null);
-    fetchUpdates();
+    setIsLoading(false);
   };
 
   const handleDelete = async (updateId: number) => {
     if (!user) return;
 
     setIsLoading(true);
-    const { error } = await supabase
-      .from('standupupdates')
-      .delete()
-      .eq('id', updateId)
-      .eq('user_id', user.id);
+    try {
+      const response = await fetch(`/api/updates?id=${updateId}&user_id=${user.id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
 
-    setIsLoading(false);
-
-    if (error) {
+      fetchUpdates();
+    } catch (error) {
       console.error('Error deleting:', error);
-      return;
     }
-
-    fetchUpdates();
+    setIsLoading(false);
   };
 
   return (
