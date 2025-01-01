@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import JSConfetti from 'js-confetti';
+import Link from "next/link";
 
 interface Update {
   id: number;
@@ -122,6 +123,11 @@ export default function Updates() {
 
   return (
     <div className="container mx-auto py-8 space-y-8">
+      <div className="flex justify-between items-center mb-8">
+        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+          ← Back to Home
+        </Link>
+      </div>
       <SignedIn>
         <h1 className="text-3xl font-bold mb-8">Standup Updates</h1>
         

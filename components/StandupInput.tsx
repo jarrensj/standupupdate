@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import JSConfetti from 'js-confetti'
 import { useUser } from '@clerk/nextjs'
+import Link from 'next/link'
 
 interface StandupUpdate {
   id?: string;
@@ -130,7 +131,7 @@ export default function StandupInput() {
   };
 
   return (
-    <div className="w-full max-w-4xl">
+    <div className="w-full max-w-4xl space-y-4">
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center w-full mb-2">
@@ -204,6 +205,13 @@ export default function StandupInput() {
           )}
         </CardContent>
       </Card>
+      {user && (
+        <div className="flex justify-end">
+          <Link href="/updates" className="text-sm text-muted-foreground hover:text-foreground">
+            View all updates →
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
