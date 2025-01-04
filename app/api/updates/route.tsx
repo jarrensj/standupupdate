@@ -28,10 +28,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { text, user_id } = body;
+  const { text, user_id, date } = body;
 
-  if (!text || !user_id) {
-    return NextResponse.json({ error: 'text and user_id are required' }, { status: 400 });
+  if (!text || !user_id || !date) {
+    return NextResponse.json({ error: 'text, user_id, and date are required' }, { status: 400 });
   }
 
   const { error } = await supabase
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     .insert([{
       text,
       user_id,
+      date,
       created_at: new Date().toISOString()
     }]);
 
@@ -51,16 +52,17 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   const body = await request.json();
-  const { id, text, user_id } = body;
+  const { id, text, user_id, date } = body;
 
-  if (!id || !text || !user_id) {
-    return NextResponse.json({ error: 'id, text, and user_id are required' }, { status: 400 });
+  if (!id || !text || !user_id || !date) {
+    return NextResponse.json({ error: 'id, text, user_id, and date are required' }, { status: 400 });
   }
 
   const { error } = await supabase
     .from('standupupdates')
     .update({ 
       text,
+      date,
       updated_at: new Date().toISOString()
     })
     .eq('id', id)

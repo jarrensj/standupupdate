@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import JSConfetti from 'js-confetti'
 import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface StandupUpdate {
   id?: string;
@@ -14,6 +15,7 @@ interface StandupUpdate {
   created_at: string;
   updated_at?: string;
   user_id?: string;
+  date: string;
 }
 
 export default function StandupInput() {
@@ -23,6 +25,10 @@ export default function StandupInput() {
   const [isEditing, setIsEditing] = useState(false)
   const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const jsConfettiRef = useRef<JSConfetti | null>(null)
 
   useEffect(() => {
@@ -78,19 +84,20 @@ export default function StandupInput() {
     const updateData: StandupUpdate = {
       text: update,
       created_at: savedUpdate?.created_at || now,
-      ...(isEditing ? { updated_at: now } : {}),
+      date: new Date(selectedDate).toISOString(),
       user_id: user?.id,
+      ...(isEditing ? { updated_at: now } : {})
     };
 
     try {
       if (user) {
-        const method = isEditing ? 'PUT' : 'POST';
         const response = await fetch('/api/updates', {
-          method,
+          method: isEditing ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text: update,
             user_id: user.id,
+            date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
             ...(isEditing && savedUpdate?.id && { id: savedUpdate.id }),
           }),
         });
@@ -140,6 +147,38 @@ export default function StandupInput() {
     }
   };
 
+  const generateMonthOptions = () => {
+    return [
+      { value: 0, label: 'January' },
+      { value: 1, label: 'February' },
+      { value: 2, label: 'March' },
+      { value: 3, label: 'April' },
+      { value: 4, label: 'May' },
+      { value: 5, label: 'June' },
+      { value: 6, label: 'July' },
+      { value: 7, label: 'August' },
+      { value: 8, label: 'September' },
+      { value: 9, label: 'October' },
+      { value: 10, label: 'November' },
+      { value: 11, label: 'December' }
+    ];
+  };
+
+  const generateDayOptions = () => {
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    return Array.from({ length: daysInMonth }, (_, i) => ({
+      value: i + 1,
+      label: (i + 1).toString()
+    }));
+  };
+
+  const generateYearOptions = () => {
+    return [
+      { value: 2024, label: "2024" },
+      { value: 2025, label: "2025" }
+    ];
+  };
+
   return (
     <div className="w-full max-w-4xl space-y-4">
       <Card>
@@ -184,6 +223,14 @@ export default function StandupInput() {
             <>
               {savedUpdate && !isEditing && !isCreatingNew ? (
                 <div className="flex flex-col gap-4">
+                  <div className="text-sm text-muted-foreground mb-2">
+                    Standup for: {new Date(savedUpdate.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </div>
                   <p className="whitespace-pre-wrap">{savedUpdate.text}</p>
                   <div className="flex gap-2">
                     <Button onClick={handleEdit}>Edit Update</Button>
@@ -194,6 +241,64 @@ export default function StandupInput() {
                 </div>
               ) : (
                 <>
+                  <div className="mb-4 flex gap-2">
+                    <Select
+                      value={selectedMonth.toString()}
+                      onValueChange={(value) => {
+                        setSelectedMonth(parseInt(value));
+                        setSelectedDate(new Date(selectedYear, parseInt(value), selectedDay).toISOString().split('T')[0]);
+                      }}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {generateMonthOptions().map((month) => (
+                          <SelectItem key={month.value} value={month.value.toString()}>
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={selectedDay.toString()}
+                      onValueChange={(value) => {
+                        setSelectedDay(parseInt(value));
+                        setSelectedDate(new Date(selectedYear, selectedMonth, parseInt(value)).toISOString().split('T')[0]);
+                      }}
+                    >
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue placeholder="Day" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {generateDayOptions().map((day) => (
+                          <SelectItem key={day.value} value={day.value.toString()}>
+                            {day.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={selectedYear.toString()}
+                      onValueChange={(value) => {
+                        setSelectedYear(parseInt(value));
+                        setSelectedDate(new Date(parseInt(value), selectedMonth, selectedDay).toISOString().split('T')[0]);
+                      }}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {generateYearOptions().map((year) => (
+                          <SelectItem key={year.value} value={year.value.toString()}>
+                            {year.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Textarea
                     placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
                     value={update}
