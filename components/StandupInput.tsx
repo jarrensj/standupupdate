@@ -17,11 +17,12 @@ interface StandupUpdate {
 }
 
 export default function StandupInput() {
-  const { user } = useUser()
+  const { user, isLoaded } = useUser()
   const [update, setUpdate] = useState('')
   const [savedUpdate, setSavedUpdate] = useState<StandupUpdate | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isCreatingNew, setIsCreatingNew] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const jsConfettiRef = useRef<JSConfetti | null>(null)
 
   useEffect(() => {
@@ -32,6 +33,8 @@ export default function StandupInput() {
   }, []);
 
   useEffect(() => {
+    if (!isLoaded) return;
+
     if (!user) {
       const savedData = localStorage.getItem('standupUpdate');
       if (savedData) {
@@ -41,13 +44,15 @@ export default function StandupInput() {
       }
       setIsEditing(false);
       setIsCreatingNew(false);
+      setIsLoading(false);
     } 
     else {
       fetchUserUpdates();
     }
-  }, [user]);
+  }, [user, isLoaded]);
 
   const fetchUserUpdates = async () => {
+    setIsLoading(true);
     try {
       if (!user?.id) return;
       const response = await fetch(`/api/updates?user_id=${user.id}`);
@@ -57,9 +62,14 @@ export default function StandupInput() {
         setIsCreatingNew(false);
         setIsEditing(false);
         setUpdate('');
+      } else {
+        setSavedUpdate(null);
       }
     } catch (error) {
       console.error('Error fetching updates:', error);
+      setSavedUpdate(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -166,41 +176,49 @@ export default function StandupInput() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {savedUpdate && !isEditing && !isCreatingNew ? (
-            <div className="flex flex-col gap-4">
-              <p className="whitespace-pre-wrap">{savedUpdate.text}</p>
-              <div className="flex gap-2">
-                <Button onClick={handleEdit}>Edit Update</Button>
-                <Button variant="destructive" onClick={handleDelete}>
-                  Delete Update
-                </Button>
-              </div>
+          {isLoading ? (
+            <div className="min-h-[200px] flex items-center justify-center">
+              Loading...
             </div>
           ) : (
             <>
-              <Textarea
-                placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
-                value={update}
-                onChange={(e) => setUpdate(e.target.value)}
-                className="min-h-[200px] mb-4"
-              />
-              <div className="flex gap-2">
-                <Button onClick={handleSave} disabled={!update.trim()}>
-                  {isEditing ? 'Save Edit' : 'Save Update'}
-                </Button>
-                {(isEditing || isCreatingNew) && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setIsCreatingNew(false);
-                      setUpdate('');
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </div>
+              {savedUpdate && !isEditing && !isCreatingNew ? (
+                <div className="flex flex-col gap-4">
+                  <p className="whitespace-pre-wrap">{savedUpdate.text}</p>
+                  <div className="flex gap-2">
+                    <Button onClick={handleEdit}>Edit Update</Button>
+                    <Button variant="destructive" onClick={handleDelete}>
+                      Delete Update
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
+                    value={update}
+                    onChange={(e) => setUpdate(e.target.value)}
+                    className="min-h-[200px] mb-4"
+                  />
+                  <div className="flex gap-2">
+                    <Button onClick={handleSave} disabled={!update.trim()}>
+                      {isEditing ? 'Save Edit' : 'Save Update'}
+                    </Button>
+                    {(isEditing || isCreatingNew) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setIsCreatingNew(false);
+                          setUpdate('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
             </>
           )}
         </CardContent>
