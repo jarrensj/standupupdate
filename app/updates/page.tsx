@@ -13,6 +13,7 @@ interface Update {
   id: number;
   created_at: Date;
   updated_at: Date;
+  date: Date;
   text: string;
   user_id: string;
 }
@@ -57,7 +58,11 @@ export default function Updates() {
       const response = await fetch('/api/updates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: newUpdate, user_id: user.id }),
+        body: JSON.stringify({ 
+          text: newUpdate, 
+          user_id: user.id,
+          date: new Date().toISOString()
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -157,78 +162,83 @@ export default function Updates() {
         <div className="mt-12">
           <h2 className="text-2xl font-semibold mb-4">Previous StandupUpdates</h2>
           <div className="space-y-4">
-            {updates.map((update) => (
-              <Card key={update.id}>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardDescription>
-                    Created: {new Date(update.created_at).toLocaleString()}
-                    {update.updated_at && update.updated_at !== update.created_at && (
-                      <> Last edited: {new Date(update.updated_at).toLocaleString()}</>
-                    )}
-                  </CardDescription>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditingUpdate(update)}
-                    >
-                      Edit
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-destructive">
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete your update.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(update.id)}
-                            className="bg-destructive text-destructive-foreground"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {editingUpdate?.id === update.id ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={editingUpdate.text}
-                        onChange={(e) => setEditingUpdate({ ...editingUpdate, text: e.target.value })}
-                        className="min-h-[100px]"
-                      />
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={() => handleEdit(editingUpdate.text)}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? 'Saving...' : 'Save'}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setEditingUpdate(null)}
-                        >
-                          Cancel
-                        </Button>
+            {updates
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .map((update) => (
+                <Card key={update.id}>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardDescription>
+                      <div>Update for: {new Date(update.date).toLocaleDateString()}</div>
+                      <div className="text-xs">
+                        Created: {new Date(update.created_at).toLocaleString()}
+                        {update.updated_at && update.updated_at !== update.created_at && (
+                          <> · Last edited: {new Date(update.updated_at).toLocaleString()}</>
+                        )}
                       </div>
+                    </CardDescription>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingUpdate(update)}
+                      >
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-destructive">
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete your update.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(update.id)}
+                              className="bg-destructive text-destructive-foreground"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
-                  ) : (
-                    <p className="whitespace-pre-wrap">{update.text}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent>
+                    {editingUpdate?.id === update.id ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editingUpdate.text}
+                          onChange={(e) => setEditingUpdate({ ...editingUpdate, text: e.target.value })}
+                          className="min-h-[100px]"
+                        />
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => handleEdit(editingUpdate.text)}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? 'Saving...' : 'Save'}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setEditingUpdate(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{update.text}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
           </div>
         </div>
       </SignedIn>
