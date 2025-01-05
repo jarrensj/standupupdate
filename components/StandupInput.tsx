@@ -181,14 +181,14 @@ export default function StandupInput() {
 
   return (
     <div className="w-full max-w-4xl space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center w-full mb-2">
-            <CardTitle>Standup Update</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="pb-3 space-y-4">
+          <div className="flex justify-between items-center w-full">
+            <CardTitle className="text-2xl font-bold">Standup Update</CardTitle>
             {savedUpdate && user && (
               <Button
                 variant="outline"
-                className="ml-4"
+                className="hover:bg-secondary"
                 onClick={() => {
                   setIsCreatingNew((prev) => !prev);
                   setIsEditing(false);
@@ -199,49 +199,49 @@ export default function StandupInput() {
               </Button>
             )}
           </div>
-          <CardDescription>
-            {savedUpdate && !isEditing && !isCreatingNew
-              ? (
-                <>
-                  Created: {new Date(savedUpdate.created_at).toLocaleString()}
-                  <br />
-                  {savedUpdate.updated_at && 
-                    `Last updated: ${new Date(savedUpdate.updated_at).toLocaleString()}`}
-                </>
-              )
-              : isCreatingNew
+          <CardDescription className="text-base text-muted-foreground">
+            {isCreatingNew
               ? 'Create a new update'
+              : savedUpdate && !isEditing
+              ? 'Your most recently created update'
               : 'Type your standup update'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2">
           {isLoading ? (
-            <div className="min-h-[200px] flex items-center justify-center">
+            <div className="min-h-[200px] flex items-center justify-center text-muted-foreground">
               Loading...
             </div>
           ) : (
             <>
               {savedUpdate && !isEditing && !isCreatingNew ? (
-                <div className="flex flex-col gap-4">
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Standup for: {new Date(savedUpdate.date).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+                <div className="space-y-8">
+                  <div className="border-b pb-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-semibold text-primary">
+                        {new Date(savedUpdate.date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </h3>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" onClick={handleEdit}>Edit</Button>
+                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={handleDelete}>
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <p className="whitespace-pre-wrap">{savedUpdate.text}</p>
-                  <div className="flex gap-2">
-                    <Button onClick={handleEdit}>Edit Update</Button>
-                    <Button variant="destructive" onClick={handleDelete}>
-                      Delete Update
-                    </Button>
+                  
+                  <div className="prose max-w-none">
+                    <p className="whitespace-pre-wrap leading-relaxed text-lg">{savedUpdate.text}</p>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="mb-4 flex gap-2">
+                  <div className="mb-6 flex gap-3">
                     <Select
                       value={selectedMonth.toString()}
                       onValueChange={(value) => {
@@ -303,15 +303,17 @@ export default function StandupInput() {
                     placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
                     value={update}
                     onChange={(e) => setUpdate(e.target.value)}
-                    className="min-h-[200px] mb-4"
+                    className="min-h-[200px] mb-6 text-lg leading-relaxed"
                   />
-                  <div className="flex gap-2">
-                    <Button onClick={handleSave} disabled={!update.trim()}>
+                  <div className="flex gap-3">
+                    <Button size="lg" onClick={handleSave} disabled={!update.trim()}>
                       {isEditing ? 'Save Edit' : 'Save Update'}
                     </Button>
                     {(isEditing || isCreatingNew) && (
                       <Button
+                        size="lg"
                         variant="outline"
+                        className="hover:bg-secondary"
                         onClick={() => {
                           setIsEditing(false);
                           setIsCreatingNew(false);
