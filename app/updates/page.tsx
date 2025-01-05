@@ -168,12 +168,14 @@ export default function Updates() {
                 <Card key={update.id}>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardDescription>
-                      <div>update for {new Date(update.date).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}</div>
-                      <div className="text-xs">
+                      <div className="font-semibold text-foreground">
+                        {new Date(update.date).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
                         Created: {new Date(update.created_at).toLocaleString()}
                         {update.updated_at && update.updated_at !== update.created_at && (
                           <> · Last edited: {new Date(update.updated_at).toLocaleString()}</>
