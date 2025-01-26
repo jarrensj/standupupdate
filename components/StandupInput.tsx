@@ -181,7 +181,7 @@ export default function StandupInput() {
 
   return (
     <div className="w-full max-w-4xl space-y-4">
-      <Card className="border-2">
+      <Card className="border-2 shadow-lg">
         <CardHeader className="pb-3 space-y-4">
           <div className="flex justify-between items-center w-full">
             <CardTitle className="text-2xl font-bold">Standup Update</CardTitle>
