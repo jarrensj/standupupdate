@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import JSConfetti from 'js-confetti'
 import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
@@ -184,7 +184,16 @@ export default function StandupInput() {
       <Card className="border-2 shadow-lg">
         <CardHeader className="pb-3 space-y-4">
           <div className="flex justify-between items-center w-full">
-            <CardTitle className="text-2xl font-bold">Standup Update</CardTitle>
+            {savedUpdate && !isEditing && !isCreatingNew && (
+              <h3 className="text-xl font-semibold text-primary">
+                {new Date(savedUpdate.date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </h3>
+            )}
             {savedUpdate && user && (
               <Button
                 variant="outline"
@@ -199,13 +208,6 @@ export default function StandupInput() {
               </Button>
             )}
           </div>
-          <CardDescription className="text-base text-muted-foreground">
-            {isCreatingNew
-              ? 'Create a new update'
-              : savedUpdate && !isEditing
-              ? 'Your most recently created update'
-              : 'Type your standup update'}
-          </CardDescription>
         </CardHeader>
         <CardContent className="pt-2">
           {isLoading ? (
@@ -218,14 +220,13 @@ export default function StandupInput() {
                 <div className="space-y-8">
                   <div className="border-b pb-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-semibold text-primary">
-                        {new Date(savedUpdate.date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </h3>
+                      <CardDescription className="text-base text-muted-foreground">
+                        {isCreatingNew
+                          ? 'Create a new update'
+                          : savedUpdate && !isEditing
+                          ? 'Your most recently created update'
+                          : 'Type your standup update'}
+                      </CardDescription>
                       <div className="flex gap-2">
                         <Button size="sm" variant="ghost" onClick={handleEdit}>Edit</Button>
                         <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={handleDelete}>
