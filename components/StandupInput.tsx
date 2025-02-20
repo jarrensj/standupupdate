@@ -30,6 +30,8 @@ export default function StandupInput() {
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const jsConfettiRef = useRef<JSConfetti | null>(null)
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -179,6 +181,51 @@ export default function StandupInput() {
     ];
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        
+        try {
+          const response = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: audioBlob,
+            headers: {
+              'Content-Type': 'audio/webm',
+            },
+          });
+          if (!response.ok) throw new Error('Transcription failed');
+          
+          const { text } = await response.json();
+          setUpdate(text);
+        } catch (error) {
+          console.error('Transcription error:', error);
+        }
+      };
+      
+      recorder.start();
+      setIsRecording(true);
+      setMediaRecorder(recorder);
+    } catch (error) {
+      alert('Failed to start recording');
+      console.error(error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl space-y-4">
       <Card className="border-2 shadow-lg">
@@ -306,24 +353,33 @@ export default function StandupInput() {
                     onChange={(e) => setUpdate(e.target.value)}
                     className="min-h-[200px] mb-6 text-lg leading-relaxed"
                   />
-                  <div className="flex gap-3">
-                    <Button size="lg" onClick={handleSave} disabled={!update.trim()}>
-                      {isEditing ? 'Save Edit' : 'Save Update'}
-                    </Button>
-                    {(isEditing || isCreatingNew) && (
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="hover:bg-secondary"
-                        onClick={() => {
-                          setIsEditing(false);
-                          setIsCreatingNew(false);
-                          setUpdate('');
-                        }}
-                      >
-                        Cancel
+                  <div className="flex gap-3 items-center">
+                  <Button
+                    variant="outline"
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={isRecording ? "bg-red-100" : ""}
+                  >
+                    {isRecording ? 'Stop Recording' : 'Record Voice Note'}
+                  </Button>
+                    <div className="flex-1 flex justify-end gap-3">
+                      <Button size="lg" onClick={handleSave} disabled={!update.trim()} className="w-32">
+                        {isEditing ? 'Save Edit' : 'Save Update'}
                       </Button>
-                    )}
+                      {(isEditing || isCreatingNew) && (
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="hover:bg-secondary w-32"
+                          onClick={() => {
+                            setIsEditing(false);
+                            setIsCreatingNew(false);
+                            setUpdate('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </>
               )}
