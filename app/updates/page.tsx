@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import JSConfetti from 'js-confetti';
 import Link from "next/link";
+import Calendar from "@/components/Calendar";
 
 interface Update {
   id: number;
@@ -134,7 +135,14 @@ export default function Updates() {
         </Link>
       </div>
       <SignedIn>
-        <h1 className="text-3xl font-bold mb-8">Standup Updates</h1>
+      <h1 className="text-3xl font-bold mb-8">Standup Updates</h1>
+        <div className="mb-12">
+          <div className="w-full max-w-[900px] mx-auto border rounded-lg overflow-visible">
+            <div className="p-4 sm:p-6">
+              <Calendar />
+            </div>
+          </div>
+        </div>
         
         <Card>
           <CardHeader>

@@ -8,16 +8,23 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const user_id = searchParams.get('user_id');
+  const start_date = searchParams.get('start_date');
 
   if (!user_id) {
     return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('standupupdates')
     .select('*')
     .eq('user_id', user_id)
     .order('created_at', { ascending: false });
+
+  if (start_date) {
+    query = query.gte('date', start_date);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
