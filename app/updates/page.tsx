@@ -94,7 +94,8 @@ export default function Updates() {
         body: JSON.stringify({ 
           id: editingUpdate.id, 
           text: updatedText, 
-          user_id: user.id 
+          user_id: user.id,
+          date: new Date().toISOString()
         }),
       });
       const data = await response.json();
