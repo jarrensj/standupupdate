@@ -83,7 +83,7 @@ export default function Updates() {
     setIsLoading(false);
   };
 
-  const handleEdit = async (updatedText: string, updatedDate: Date) => {
+  const handleEdit = async (updatedText: string, updatedDate: string | Date) => {
     if (!editingUpdate || !user) return;
     
     setIsLoading(true);
@@ -94,7 +94,7 @@ export default function Updates() {
         body: JSON.stringify({ 
           id: editingUpdate.id, 
           text: updatedText, 
-          date: updatedDate.toISOString(),
+          date: typeof updatedDate === 'string' ? updatedDate : updatedDate.toISOString(),
           user_id: user.id 
         }),
       });
