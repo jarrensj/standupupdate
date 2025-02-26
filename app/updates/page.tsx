@@ -83,7 +83,7 @@ export default function Updates() {
     setIsLoading(false);
   };
 
-  const handleEdit = async (updatedText: string) => {
+  const handleEdit = async (updatedText: string, updatedDate: Date) => {
     if (!editingUpdate || !user) return;
     
     setIsLoading(true);
@@ -94,6 +94,7 @@ export default function Updates() {
         body: JSON.stringify({ 
           id: editingUpdate.id, 
           text: updatedText, 
+          date: updatedDate.toISOString(),
           user_id: user.id 
         }),
       });
@@ -172,13 +173,14 @@ export default function Updates() {
                         {new Date(update.date).toLocaleDateString('en-US', {
                           month: 'long',
                           day: 'numeric',
-                          year: 'numeric'
+                          year: 'numeric',
+                          timeZone: 'UTC'
                         })}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Created: {new Date(update.created_at).toLocaleString()}
+                        Created: {new Date(update.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}
                         {update.updated_at && update.updated_at !== update.created_at && (
-                          <> · Last edited: {new Date(update.updated_at).toLocaleString()}</>
+                          <> · Last edited: {new Date(update.updated_at).toLocaleString('en-US', { timeZone: 'UTC' })}</>
                         )}
                       </div>
                     </CardDescription>
@@ -224,9 +226,15 @@ export default function Updates() {
                           onChange={(e) => setEditingUpdate({ ...editingUpdate, text: e.target.value })}
                           className="min-h-[100px]"
                         />
+                        <input
+                          type="date"
+                          value={editingUpdate ? new Date(editingUpdate.date).toISOString().split('T')[0] : ''}
+                          onChange={(e) => setEditingUpdate({ ...editingUpdate, date: new Date(e.target.value) })}
+                          className="border p-2"
+                        />
                         <div className="flex gap-2">
                           <Button 
-                            onClick={() => handleEdit(editingUpdate.text)}
+                            onClick={() => handleEdit(editingUpdate.text, editingUpdate.date)}
                             disabled={isLoading}
                           >
                             {isLoading ? 'Saving...' : 'Save'}
