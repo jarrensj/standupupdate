@@ -8,6 +8,7 @@ import JSConfetti from 'js-confetti'
 import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FaMicrophoneAlt } from 'react-icons/fa'
 
 interface StandupUpdate {
   id?: string;
@@ -359,7 +360,7 @@ export default function StandupInput() {
                     onClick={isRecording ? stopRecording : startRecording}
                     className={isRecording ? "bg-red-100" : ""}
                   >
-                    {isRecording ? 'Stop Recording' : 'Record Voice Note'}
+                    {isRecording ? 'Stop Recording' : <FaMicrophoneAlt />}
                   </Button>
                     <div className="flex-1 flex justify-end gap-3">
                       <Button size="lg" onClick={handleSave} disabled={!update.trim()} className="w-32">
