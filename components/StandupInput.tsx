@@ -9,6 +9,7 @@ import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FaMicrophoneAlt } from 'react-icons/fa'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
 interface StandupUpdate {
   id?: string;
@@ -195,7 +196,6 @@ export default function StandupInput() {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         
         try {
-          setIsTranscribing(true);
           const response = await fetch('/api/transcribe', {
             method: 'POST',
             body: audioBlob,
@@ -225,6 +225,7 @@ export default function StandupInput() {
 
   const stopRecording = () => {
     if (mediaRecorder && isRecording) {
+      setIsTranscribing(true);
       mediaRecorder.stop();
       mediaRecorder.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
@@ -361,13 +362,46 @@ export default function StandupInput() {
                     className="min-h-[200px] mb-6 text-lg leading-relaxed"
                   />
                   <div className="flex gap-3 items-center">
-                  <Button
-                    variant="outline"
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={isRecording ? "bg-red-100" : ""}
-                  >
-                    {isRecording ? 'Stop Recording' : <FaMicrophoneAlt />}
-                  </Button>
+                    {update.trim() && !isRecording ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                          >
+                            <FaMicrophoneAlt />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Warning</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Recording a new voice note will overwrite all existing contents.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                setUpdate('');
+                                setTimeout(() => {
+                                  startRecording();
+                                }, 100);
+                              }}
+                            >
+                              Continue
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className={isRecording ? "bg-red-100" : ""}
+                      >
+                        {isRecording ? 'Stop Recording' : <FaMicrophoneAlt />}
+                      </Button>
+                    )}
                     <div className="flex-1 flex justify-end gap-3">
                       <Button size="lg" onClick={handleSave} disabled={!update.trim()} className="w-32">
                         {isEditing ? 'Save Edit' : 'Save Update'}
