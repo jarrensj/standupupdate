@@ -33,6 +33,7 @@ export default function StandupInput() {
   const jsConfettiRef = useRef<JSConfetti | null>(null)
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -194,6 +195,7 @@ export default function StandupInput() {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         
         try {
+          setIsTranscribing(true);
           const response = await fetch('/api/transcribe', {
             method: 'POST',
             body: audioBlob,
@@ -207,6 +209,8 @@ export default function StandupInput() {
           setUpdate(text);
         } catch (error) {
           console.error('Transcription error:', error);
+        } finally {
+          setIsTranscribing(false);
         }
       };
       
@@ -349,7 +353,9 @@ export default function StandupInput() {
                     </Select>
                   </div>
                   <Textarea
-                    placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
+                    placeholder={isTranscribing 
+                      ? "Transcribing..." 
+                      : "What did you work on yesterday? What are you working on today? Do you have any blockers?"}
                     value={update}
                     onChange={(e) => setUpdate(e.target.value)}
                     className="min-h-[200px] mb-6 text-lg leading-relaxed"
