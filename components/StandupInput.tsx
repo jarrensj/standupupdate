@@ -9,7 +9,7 @@ import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FaMicrophoneAlt } from 'react-icons/fa'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
 interface StandupUpdate {
   id?: string;
@@ -184,7 +184,7 @@ export default function StandupInput() {
     ];
   };
 
-  const startRecording = async () => {
+  const startRecording = async (shouldAppend = false) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
@@ -206,7 +206,11 @@ export default function StandupInput() {
           if (!response.ok) throw new Error('Transcription failed');
           
           const { text } = await response.json();
-          setUpdate(text);
+          if (shouldAppend) {
+            setUpdate(prev => `${prev}\n\n${text}`);
+          } else {
+            setUpdate(text);
+          }
         } catch (error) {
           console.error('Transcription error:', error);
         } finally {
@@ -247,19 +251,26 @@ export default function StandupInput() {
                 })}
               </h3>
             )}
-            {savedUpdate && user && (
-              <Button
-                variant="outline"
-                className="hover:bg-secondary"
-                onClick={() => {
-                  setIsCreatingNew((prev) => !prev);
-                  setIsEditing(false);
-                  setUpdate('');
-                }}
-              >
-                {isCreatingNew ? "View Latest Update" : "Create New Update"}
-              </Button>
-            )}
+            <div className="flex items-center gap-3">
+              {isTranscribing && (
+                <div className="text-green-500 font-medium bg-green-50 px-3 py-1 rounded-md animate-pulse">
+                  Transcribing...
+                </div>
+              )}
+              {savedUpdate && user && (
+                <Button
+                  variant="outline"
+                  className="hover:bg-secondary"
+                  onClick={() => {
+                    setIsCreatingNew((prev) => !prev);
+                    setIsEditing(false);
+                    setUpdate('');
+                  }}
+                >
+                  {isCreatingNew ? "View Latest Update" : "Create New Update"}
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-2">
@@ -353,14 +364,14 @@ export default function StandupInput() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Textarea
-                    placeholder={isTranscribing 
-                      ? "Transcribing..." 
-                      : "What did you work on yesterday? What are you working on today? Do you have any blockers?"}
-                    value={update}
-                    onChange={(e) => setUpdate(e.target.value)}
-                    className="min-h-[200px] mb-6 text-lg leading-relaxed"
-                  />
+                  <div className="relative">
+                    <Textarea
+                      placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
+                      value={update}
+                      onChange={(e) => setUpdate(e.target.value)}
+                      className="min-h-[200px] mb-6 text-lg leading-relaxed"
+                    />
+                  </div>
                   <div className="flex gap-3 items-center">
                     {update.trim() && !isRecording ? (
                       <AlertDialog>
@@ -372,31 +383,51 @@ export default function StandupInput() {
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Warning</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Recording a new voice note will overwrite all existing contents.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
+                          <div className="flex justify-between items-start">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Voice Recording Options</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                How would you like to add your voice recording?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 rounded-full"
+                              onClick={() => document.querySelector<HTMLButtonElement>('[data-alert-dialog-cancel]')?.click()}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+                            <AlertDialogCancel className="hidden" />
+                            <Button
                               onClick={() => {
-                                setUpdate('');
                                 setTimeout(() => {
-                                  startRecording();
+                                  startRecording(false);
                                 }, 100);
                               }}
+                              variant="destructive"
                             >
-                              Continue
-                            </AlertDialogAction>
+                              Overwrite
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setTimeout(() => {
+                                  startRecording(true);
+                                }, 100);
+                              }}
+                              variant="default"
+                            >
+                              Append
+                            </Button>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     ) : (
                       <Button
                         variant="outline"
-                        onClick={isRecording ? stopRecording : startRecording}
+                        onClick={isRecording ? stopRecording : () => startRecording()}
                         className={isRecording ? "bg-red-100" : ""}
                       >
                         {isRecording ? 'Stop Recording' : <FaMicrophoneAlt />}
