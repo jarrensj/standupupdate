@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const startDate = searchParams.get('start_date');
   const endDate = searchParams.get('end_date');
-  const datesOnly = searchParams.get('dates_only') === 'true';
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -31,7 +30,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClerkSupabaseClient(req);
   let query = supabase
     .from('standupupdates')
-    .select(datesOnly ? 'date' : '*')
+    .select('id, text, date, created_at, updated_at, user_id')
     .eq('user_id', userId);
 
   if (startDate && endDate) {

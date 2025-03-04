@@ -5,10 +5,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 
 interface UpdateDate {
   date?: string | null;
   created_at: string;
+  text?: string;
+  id?: number;
+  updated_at?: string;
 }
 
 export default function Calendar() {
@@ -16,6 +20,9 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [datesWithUpdates, setDatesWithUpdates] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [selectedDayUpdate, setSelectedDayUpdate] = useState<string | null>(null)
+  const [updatesData, setUpdatesData] = useState<Record<string, string>>({})
 
   const formatLocalDate = (date: Date) => {
     const year = date.getFullYear()
@@ -64,26 +71,27 @@ export default function Calendar() {
         const endUTCISO = endUTC.toISOString()
 
         const response = await fetch(
-          `/api/updates?user_id=${encodeURIComponent(user.id)}&start_date=${encodeURIComponent(startUTCISO)}&end_date=${encodeURIComponent(endUTCISO)}&dates_only=true`
+          `/api/updates?user_id=${encodeURIComponent(user.id)}&start_date=${encodeURIComponent(startUTCISO)}&end_date=${encodeURIComponent(endUTCISO)}`
         )
 
         if (!response.ok) throw new Error("Failed to fetch update dates")
 
         const data = await response.json()
         const datesSet = new Set<string>()
+        const updatesMap: Record<string, string> = {}
 
         data.forEach((item: UpdateDate) => {
-          // Use this column if they edited the date of the update, else use created date
-          let formatted: string
           if (item.date) {
-            formatted = item.date.split("T")[0]
-          } else {
-            const createdDate = new Date(item.created_at)
-            formatted = formatLocalDate(createdDate)
+            const formatted = item.date.split("T")[0]
+            datesSet.add(formatted)
+            
+            if (item.text) {
+              updatesMap[formatted] = item.text
+            }
           }
-          datesSet.add(formatted)
         })
         setDatesWithUpdates(datesSet)
+        setUpdatesData(updatesMap)
       } catch (error) {
         console.error("Error fetching dates with updates:", error)
       } finally {
@@ -113,6 +121,23 @@ export default function Calendar() {
   const hasUpdate = (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
     return datesWithUpdates.has(formatLocalDate(date))
+  }
+
+  const handleDayClick = (day: number) => {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
+    const formattedDate = formatLocalDate(date)
+    
+    if (!datesWithUpdates.has(formattedDate)) {
+      return;
+    }
+    
+    if (selectedDay === formattedDate) {
+      setSelectedDay(null)
+      setSelectedDayUpdate(null)
+    } else {
+      setSelectedDay(formattedDate)
+      setSelectedDayUpdate(updatesData[formattedDate] || null)
+    }
   }
 
   return (
@@ -150,14 +175,22 @@ export default function Calendar() {
           {days.map((day) => {
             const isToday = isCurrentMonth && day === currentDay
             const dayHasUpdate = hasUpdate(day)
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
+            const formattedDate = formatLocalDate(date)
+            const isSelected = selectedDay === formattedDate
 
             return (
-              <div key={`day-${day}`} className="h-10 flex items-center justify-center p-1">
+              <div 
+                key={`day-${day}`} 
+                className="h-10 flex items-center justify-center p-1"
+                onClick={() => dayHasUpdate && handleDayClick(day)}
+              >
                 <div
                   className={cn(
                     "h-8 w-8 flex items-center justify-center text-sm rounded-full",
                     isToday && "border-2 border-primary font-medium",
-                    dayHasUpdate && "bg-gray-200",
+                    dayHasUpdate && "bg-gray-200 cursor-pointer",
+                    isSelected && "bg-primary text-primary-foreground",
                     !dayHasUpdate && !isToday && "hover:bg-muted"
                   )}
                 >
@@ -167,6 +200,29 @@ export default function Calendar() {
             )
           })}
         </div>
+        
+        {selectedDay && (
+          <Card className="mt-4">
+            <CardHeader className="pb-2">
+              <CardDescription>
+                <div className="font-semibold text-foreground">
+                  {new Date(selectedDay + "T00:00:00").toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </div>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedDayUpdate ? (
+                <p className="whitespace-pre-wrap">{selectedDayUpdate}</p>
+              ) : (
+                <p className="text-muted-foreground">No notes for this day</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
