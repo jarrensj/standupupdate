@@ -19,17 +19,25 @@ async function createClerkSupabaseClient(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const { userId } = getAuth(req);
+  const { searchParams } = new URL(req.url);
+  const startDate = searchParams.get('start_date');
+  const endDate = searchParams.get('end_date');
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const supabase = await createClerkSupabaseClient(req);
-  const { data, error } = await supabase
+  let query = supabase
     .from('standupupdates')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .select('id, text, date, created_at, updated_at, user_id')
+    .eq('user_id', userId);
+
+  if (startDate && endDate) {
+    query = query.gte('date', startDate).lte('date', endDate);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
