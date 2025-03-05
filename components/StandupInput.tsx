@@ -8,8 +8,9 @@ import JSConfetti from 'js-confetti'
 import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FaMicrophoneAlt } from 'react-icons/fa'
+import { FaMicrophoneAlt, FaMagic } from 'react-icons/fa'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface StandupUpdate {
   id?: string;
@@ -35,6 +36,7 @@ export default function StandupInput() {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
+  const [isFormatting, setIsFormatting] = useState<boolean>(false);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -236,6 +238,30 @@ export default function StandupInput() {
     }
   };
 
+  const formatNote = async () => {
+    if (!update.trim()) return;
+    
+    setIsFormatting(true);
+    try {
+      const response = await fetch('/api/format-note', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: update }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to format note');
+      
+      const { formattedText } = await response.json();
+      setUpdate(formattedText);
+    } catch (error) {
+      console.error('Error formatting note:', error);
+    } finally {
+      setIsFormatting(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl space-y-4">
       <Card className="border-2 shadow-lg">
@@ -433,6 +459,23 @@ export default function StandupInput() {
                         {isRecording ? 'Stop Recording' : <FaMicrophoneAlt />}
                       </Button>
                     )}
+                    <TooltipProvider delayDuration={500}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            onClick={formatNote}
+                            disabled={!update.trim() || isFormatting}
+                            className={isFormatting ? "bg-blue-100" : ""}
+                          >
+                            {isFormatting ? 'Formatting...' : <FaMagic className="mr-2" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Format your update with AI</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <div className="flex-1 flex justify-end gap-3">
                       <Button size="lg" onClick={handleSave} disabled={!update.trim()} className="w-32">
                         {isEditing ? 'Save Edit' : 'Save Update'}
