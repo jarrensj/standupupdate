@@ -102,6 +102,11 @@ export default function Calendar() {
     fetchDatesWithUpdates()
   }, [currentDate, user])
 
+  useEffect(() => {
+    setSelectedDay(null)
+    setSelectedDayUpdate(null)
+  }, [currentDate])
+
   const monthName = currentDate.toLocaleString("default", { month: "long" })
   const year = currentDate.getFullYear()
 
