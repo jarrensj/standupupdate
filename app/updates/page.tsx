@@ -138,29 +138,6 @@ export default function Updates() {
         <h1 className="text-3xl font-bold mb-8">Standup Updates</h1>
         <Calendar />
         
-        <Card>
-          <CardHeader>
-            <CardTitle>New Update</CardTitle>
-            <CardDescription>
-              Type your standup update
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
-              value={newUpdate}
-              onChange={(e) => setNewUpdate(e.target.value)}
-              className="min-h-[200px] mb-4"
-            />
-            <Button 
-              onClick={handleSave} 
-              disabled={!newUpdate.trim() || isLoading}
-            >
-              {isLoading ? 'Saving...' : 'Save Update'}
-            </Button>
-          </CardContent>
-        </Card>
-        
         <div className="mt-12">
           <h2 className="text-2xl font-semibold mb-4">Previous StandupUpdates</h2>
           <div className="space-y-4">
