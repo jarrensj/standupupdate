@@ -281,7 +281,7 @@ export default function StandupInput() {
             </div>
           ) : (
             <>
-              <div className="mb-6 flex gap-3">
+              <div className="mb-6 flex flex-wrap gap-3">
                 <Select
                   value={selectedMonth.toString()}
                   onValueChange={(value) => {
@@ -289,7 +289,7 @@ export default function StandupInput() {
                     setSelectedDate(new Date(selectedYear, parseInt(value), selectedDay).toISOString().split('T')[0]);
                   }}
                 >
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-full sm:w-[200px]">
                     <SelectValue placeholder="Select month" />
                   </SelectTrigger>
                   <SelectContent>
@@ -347,7 +347,7 @@ export default function StandupInput() {
                   className="min-h-[200px] mb-6 text-lg leading-relaxed"
                 />
               </div>
-              <div className="flex gap-3 items-center">
+              <div className="flex flex-wrap gap-3 items-center">
                 {update.trim() && !isRecording ? (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -425,15 +425,20 @@ export default function StandupInput() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <div className="flex-1 flex justify-end gap-3">
-                  <Button size="lg" onClick={handleSave} disabled={!update.trim()} className="w-32">
+                <div className="flex-1 flex flex-wrap justify-end gap-3 w-full sm:w-auto mt-3 sm:mt-0">
+                  <Button 
+                    size="lg" 
+                    onClick={handleSave} 
+                    disabled={!update.trim()} 
+                    className="w-full sm:w-32"
+                  >
                     {isEditing ? 'Save Edit' : 'Save Update'}
                   </Button>
                   {isEditing && (
                     <Button
                       size="lg"
                       variant="outline"
-                      className="hover:bg-secondary w-32"
+                      className="hover:bg-secondary w-full sm:w-32"
                       onClick={() => {
                         setIsEditing(false);
                         setUpdate('');
