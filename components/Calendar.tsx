@@ -197,6 +197,7 @@ export default function Calendar() {
                     "h-8 w-8 flex items-center justify-center text-sm rounded-full",
                     dayHasUpdate && "bg-blue-500 text-white cursor-pointer",
                     isSelected && "bg-yellow-200 text-black",
+                    isSelected && dayHasUpdate && "outline outline-2 outline-blue-500",
                     !dayHasUpdate && "hover:bg-muted",
                     isSelected && "hover:text-black"
                   )}
