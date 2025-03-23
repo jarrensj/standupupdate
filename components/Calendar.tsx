@@ -133,7 +133,9 @@ export default function Calendar() {
     const formattedDate = formatLocalDate(date)
     
     if (!datesWithUpdates.has(formattedDate)) {
-      return;
+      setSelectedDay(formattedDate)
+      setSelectedDayUpdate(null)
+      return
     }
     
     if (selectedDay === formattedDate) {
@@ -188,15 +190,14 @@ export default function Calendar() {
               <div 
                 key={`day-${day}`} 
                 className="h-10 flex items-center justify-center p-1"
-                onClick={() => dayHasUpdate && handleDayClick(day)}
+                onClick={() => handleDayClick(day)}
               >
                 <div
                   className={cn(
                     "h-8 w-8 flex items-center justify-center text-sm rounded-full",
-                    isToday && "border-2 border-primary font-medium",
-                    dayHasUpdate && "bg-gray-200 cursor-pointer",
+                    dayHasUpdate && "bg-blue-500 text-white cursor-pointer",
                     isSelected && "bg-primary text-primary-foreground",
-                    !dayHasUpdate && !isToday && "hover:bg-muted"
+                    !dayHasUpdate && "hover:bg-muted"
                   )}
                 >
                   {day}
@@ -223,7 +224,13 @@ export default function Calendar() {
               {selectedDayUpdate ? (
                 <p className="whitespace-pre-wrap">{selectedDayUpdate}</p>
               ) : (
-                <p className="text-muted-foreground">No notes for this day</p>
+                <p className="text-muted-foreground">
+                  No update found for {new Date(selectedDay + "T00:00:00").toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}.
+                </p>
               )}
             </CardContent>
           </Card>
