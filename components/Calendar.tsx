@@ -196,8 +196,9 @@ export default function Calendar() {
                   className={cn(
                     "h-8 w-8 flex items-center justify-center text-sm rounded-full",
                     dayHasUpdate && "bg-blue-500 text-white cursor-pointer",
-                    isSelected && "bg-primary text-primary-foreground",
-                    !dayHasUpdate && "hover:bg-muted"
+                    isSelected && "bg-yellow-200 text-black",
+                    !dayHasUpdate && "hover:bg-muted",
+                    isSelected && "hover:text-black"
                   )}
                 >
                   {day}
