@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import JSConfetti from 'js-confetti'
 import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FaMicrophoneAlt, FaMagic } from 'react-icons/fa'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface StandupUpdate {
   id?: string;
@@ -26,7 +27,7 @@ export default function StandupInput() {
   const [update, setUpdate] = useState('')
   const [savedUpdate, setSavedUpdate] = useState<StandupUpdate | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [isCreatingNew, setIsCreatingNew] = useState(false)
+  const [showLatestUpdate, setShowLatestUpdate] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -45,26 +46,7 @@ export default function StandupInput() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    if (!user) {
-      const savedData = localStorage.getItem('standupUpdate');
-      if (savedData) {
-        setSavedUpdate(JSON.parse(savedData));
-      } else {
-        setSavedUpdate(null);
-      }
-      setIsEditing(false);
-      setIsCreatingNew(false);
-      setIsLoading(false);
-    } 
-    else {
-      fetchUserUpdates();
-    }
-  }, [user, isLoaded]);
-
-  const fetchUserUpdates = async () => {
+  const fetchUserUpdates = useCallback(async () => {
     setIsLoading(true);
     try {
       if (!user?.id) return;
@@ -72,7 +54,6 @@ export default function StandupInput() {
       const data = await response.json();
       if (data.length > 0) {
         setSavedUpdate(data[0]);
-        setIsCreatingNew(false);
         setIsEditing(false);
         setUpdate('');
       } else {
@@ -84,7 +65,25 @@ export default function StandupInput() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!user) {
+      const savedData = localStorage.getItem('standupUpdate');
+      if (savedData) {
+        setSavedUpdate(JSON.parse(savedData));
+      } else {
+        setSavedUpdate(null);
+      }
+      setIsEditing(false);
+      setIsLoading(false);
+    } 
+    else {
+      fetchUserUpdates();
+    }
+  }, [user, isLoaded, fetchUserUpdates]);
 
   const handleSave = async () => {
     const now = new Date().toISOString();
@@ -118,7 +117,6 @@ export default function StandupInput() {
 
       setUpdate('');
       setIsEditing(false);
-      setIsCreatingNew(false);
       if (jsConfettiRef.current) {
         jsConfettiRef.current.addConfetti({
           emojis: ['🚀'],
@@ -267,34 +265,11 @@ export default function StandupInput() {
       <Card className="border-2 shadow-lg">
         <CardHeader className="pb-3 space-y-4">
           <div className="flex justify-between items-center w-full">
-            {savedUpdate && !isEditing && !isCreatingNew && (
-              <h3 className="text-xl font-semibold text-primary">
-                {new Date(savedUpdate.date).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </h3>
-            )}
             <div className="flex items-center gap-3">
               {isTranscribing && (
                 <div className="text-green-500 font-medium bg-green-50 px-3 py-1 rounded-md animate-pulse">
                   Transcribing...
                 </div>
-              )}
-              {savedUpdate && user && (
-                <Button
-                  variant="outline"
-                  className="hover:bg-secondary"
-                  onClick={() => {
-                    setIsCreatingNew((prev) => !prev);
-                    setIsEditing(false);
-                    setUpdate('');
-                  }}
-                >
-                  {isCreatingNew ? "View Latest Update" : "Create New Update"}
-                </Button>
               )}
             </div>
           </div>
@@ -306,197 +281,246 @@ export default function StandupInput() {
             </div>
           ) : (
             <>
-              {savedUpdate && !isEditing && !isCreatingNew ? (
-                <div className="space-y-8">
-                  <div className="border-b pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardDescription className="text-base text-muted-foreground">
-                        {isCreatingNew
-                          ? 'Create a new update'
-                          : savedUpdate && !isEditing
-                          ? 'Your most recently created update'
-                          : 'Type your standup update'}
-                      </CardDescription>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="ghost" onClick={handleEdit}>Edit</Button>
-                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={handleDelete}>
-                          Delete
+              <div className="mb-6 flex flex-wrap gap-3">
+                <Select
+                  value={selectedMonth.toString()}
+                  onValueChange={(value) => {
+                    setSelectedMonth(parseInt(value));
+                    setSelectedDate(new Date(selectedYear, parseInt(value), selectedDay).toISOString().split('T')[0]);
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Select month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {generateMonthOptions().map((month) => (
+                      <SelectItem key={month.value} value={month.value.toString()}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={selectedDay.toString()}
+                  onValueChange={(value) => {
+                    setSelectedDay(parseInt(value));
+                    setSelectedDate(new Date(selectedYear, selectedMonth, parseInt(value)).toISOString().split('T')[0]);
+                  }}
+                >
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {generateDayOptions().map((day) => (
+                      <SelectItem key={day.value} value={day.value.toString()}>
+                        {day.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={selectedYear.toString()}
+                  onValueChange={(value) => {
+                    setSelectedYear(parseInt(value));
+                    setSelectedDate(new Date(parseInt(value), selectedMonth, selectedDay).toISOString().split('T')[0]);
+                  }}
+                >
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {generateYearOptions().map((year) => (
+                      <SelectItem key={year.value} value={year.value.toString()}>
+                        {year.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="relative">
+                <Textarea
+                  placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
+                  value={update}
+                  onChange={(e) => setUpdate(e.target.value)}
+                  className="min-h-[200px] mb-6 text-lg leading-relaxed"
+                />
+              </div>
+              <div className="flex flex-wrap gap-3 items-center">
+                {update.trim() && !isRecording ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                      >
+                        <FaMicrophoneAlt />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <div className="flex justify-between items-start">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Voice Recording Options</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            How would you like to add your voice recording?
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 rounded-full"
+                          onClick={() => document.querySelector<HTMLButtonElement>('[data-alert-dialog-cancel]')?.click()}
+                        >
+                          ✕
                         </Button>
+                      </div>
+                      <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+                        <AlertDialogCancel className="hidden" />
+                        <Button
+                          onClick={() => {
+                            setTimeout(() => {
+                              startRecording(false);
+                            }, 100);
+                          }}
+                          variant="destructive"
+                        >
+                          Overwrite
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setTimeout(() => {
+                              startRecording(true);
+                            }, 100);
+                          }}
+                          variant="default"
+                        >
+                          Append
+                        </Button>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={isRecording ? stopRecording : () => startRecording()}
+                    className={isRecording ? "bg-red-100" : ""}
+                  >
+                    {isRecording ? 'Stop Recording' : <FaMicrophoneAlt />}
+                  </Button>
+                )}
+                <TooltipProvider delayDuration={500}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        onClick={formatNote}
+                        disabled={!update.trim() || isFormatting}
+                        className={isFormatting ? "bg-blue-100" : ""}
+                      >
+                        {isFormatting ? 'Formatting...' : <FaMagic className="mr-2" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Format your update with AI</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <div className="flex-1 flex flex-wrap justify-end gap-3 w-full sm:w-auto mt-3 sm:mt-0">
+                  <Button 
+                    size="lg" 
+                    onClick={handleSave} 
+                    disabled={!update.trim()} 
+                    className="w-full sm:w-32"
+                  >
+                    {isEditing ? 'Save Edit' : 'Save Update'}
+                  </Button>
+                  {isEditing && (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="hover:bg-secondary w-full sm:w-32"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setUpdate('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {savedUpdate && (
+                <div className="mt-6 border-t pt-4">
+                  <button
+                    onClick={() => setShowLatestUpdate(!showLatestUpdate)}
+                    className="w-full flex items-center justify-between py-2 px-1 text-muted-foreground hover:text-foreground transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      {showLatestUpdate ? 
+                        <ChevronDown className="h-4 w-4 transition-transform" /> : 
+                        <ChevronRight className="h-4 w-4 transition-transform" />
+                      }
+                      <span className="font-medium">Last Update</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(savedUpdate.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                    <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                      {showLatestUpdate ? "Click to hide" : "Click to view"}
+                    </span>
+                  </button>
+                  
+                  <div 
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      showLatestUpdate ? 'max-h-[500px] opacity-100 mt-3' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          {new Date(savedUpdate.date).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </h3>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-7 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit();
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete();
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
+                        <p className="whitespace-pre-wrap text-muted-foreground">{savedUpdate.text}</p>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="prose max-w-none">
-                    <p className="whitespace-pre-wrap leading-relaxed text-lg">{savedUpdate.text}</p>
-                  </div>
                 </div>
-              ) : (
-                <>
-                  <div className="mb-6 flex gap-3">
-                    <Select
-                      value={selectedMonth.toString()}
-                      onValueChange={(value) => {
-                        setSelectedMonth(parseInt(value));
-                        setSelectedDate(new Date(selectedYear, parseInt(value), selectedDay).toISOString().split('T')[0]);
-                      }}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Select month" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {generateMonthOptions().map((month) => (
-                          <SelectItem key={month.value} value={month.value.toString()}>
-                            {month.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      value={selectedDay.toString()}
-                      onValueChange={(value) => {
-                        setSelectedDay(parseInt(value));
-                        setSelectedDate(new Date(selectedYear, selectedMonth, parseInt(value)).toISOString().split('T')[0]);
-                      }}
-                    >
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue placeholder="Day" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {generateDayOptions().map((day) => (
-                          <SelectItem key={day.value} value={day.value.toString()}>
-                            {day.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      value={selectedYear.toString()}
-                      onValueChange={(value) => {
-                        setSelectedYear(parseInt(value));
-                        setSelectedDate(new Date(parseInt(value), selectedMonth, selectedDay).toISOString().split('T')[0]);
-                      }}
-                    >
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {generateYearOptions().map((year) => (
-                          <SelectItem key={year.value} value={year.value.toString()}>
-                            {year.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="relative">
-                    <Textarea
-                      placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
-                      value={update}
-                      onChange={(e) => setUpdate(e.target.value)}
-                      className="min-h-[200px] mb-6 text-lg leading-relaxed"
-                    />
-                  </div>
-                  <div className="flex gap-3 items-center">
-                    {update.trim() && !isRecording ? (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                          >
-                            <FaMicrophoneAlt />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <div className="flex justify-between items-start">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Voice Recording Options</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                How would you like to add your voice recording?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 w-8 p-0 rounded-full"
-                              onClick={() => document.querySelector<HTMLButtonElement>('[data-alert-dialog-cancel]')?.click()}
-                            >
-                              ✕
-                            </Button>
-                          </div>
-                          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-                            <AlertDialogCancel className="hidden" />
-                            <Button
-                              onClick={() => {
-                                setTimeout(() => {
-                                  startRecording(false);
-                                }, 100);
-                              }}
-                              variant="destructive"
-                            >
-                              Overwrite
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                setTimeout(() => {
-                                  startRecording(true);
-                                }, 100);
-                              }}
-                              variant="default"
-                            >
-                              Append
-                            </Button>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        onClick={isRecording ? stopRecording : () => startRecording()}
-                        className={isRecording ? "bg-red-100" : ""}
-                      >
-                        {isRecording ? 'Stop Recording' : <FaMicrophoneAlt />}
-                      </Button>
-                    )}
-                    <TooltipProvider delayDuration={500}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            onClick={formatNote}
-                            disabled={!update.trim() || isFormatting}
-                            className={isFormatting ? "bg-blue-100" : ""}
-                          >
-                            {isFormatting ? 'Formatting...' : <FaMagic className="mr-2" />}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Format your update with AI</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <div className="flex-1 flex justify-end gap-3">
-                      <Button size="lg" onClick={handleSave} disabled={!update.trim()} className="w-32">
-                        {isEditing ? 'Save Edit' : 'Save Update'}
-                      </Button>
-                      {(isEditing || isCreatingNew) && (
-                        <Button
-                          size="lg"
-                          variant="outline"
-                          className="hover:bg-secondary w-32"
-                          onClick={() => {
-                            setIsEditing(false);
-                            setIsCreatingNew(false);
-                            setUpdate('');
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </>
               )}
             </>
           )}
