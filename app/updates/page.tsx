@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import JSConfetti from 'js-confetti';
 import Link from "next/link";
 import Calendar from "@/components/Calendar";
@@ -21,7 +21,6 @@ interface Update {
 export default function Updates() {
   const { user } = useUser();
   const [updates, setUpdates] = useState<Update[]>([]);
-  const [newUpdate, setNewUpdate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const jsConfettiRef = useRef<JSConfetti | null>(null);
   const [editingUpdate, setEditingUpdate] = useState<Update | null>(null);
@@ -48,39 +47,6 @@ export default function Updates() {
     } catch (error) {
       console.error('Error fetching updates:', error);
     }
-  };
-
-  const handleSave = async () => {
-    if (!user || !newUpdate.trim()) return;
-    
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/updates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text: newUpdate, 
-          user_id: user.id,
-          date: new Date().toISOString()
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-
-      setNewUpdate('');
-      fetchUpdates();
-
-      if (jsConfettiRef.current) {
-        jsConfettiRef.current.addConfetti({
-          emojis: ['🚀'],
-          emojiSize: 100,
-          confettiNumber: 24,
-        });
-      }
-    } catch (error) {
-      console.error('Error saving update:', error);
-    }
-    setIsLoading(false);
   };
 
   const handleEdit = async (updatedText: string, updatedDate: string | Date) => {
@@ -137,29 +103,6 @@ export default function Updates() {
       <SignedIn>
         <h1 className="text-3xl font-bold mb-8">Standup Updates</h1>
         <Calendar />
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>New Update</CardTitle>
-            <CardDescription>
-              Type your standup update
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="What did you work on yesterday? What are you working on today? Do you have any blockers?"
-              value={newUpdate}
-              onChange={(e) => setNewUpdate(e.target.value)}
-              className="min-h-[200px] mb-4"
-            />
-            <Button 
-              onClick={handleSave} 
-              disabled={!newUpdate.trim() || isLoading}
-            >
-              {isLoading ? 'Saving...' : 'Save Update'}
-            </Button>
-          </CardContent>
-        </Card>
         
         <div className="mt-12">
           <h2 className="text-2xl font-semibold mb-4">Previous StandupUpdates</h2>
