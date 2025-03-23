@@ -116,11 +116,6 @@ export default function Calendar() {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const emptyCells = Array.from({ length: firstDayOfMonth }, (_, i) => i)
 
-  const today = new Date()
-  const isCurrentMonth =
-    today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear()
-  const currentDay = today.getDate()
-
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   const hasUpdate = (day: number) => {
@@ -180,7 +175,6 @@ export default function Calendar() {
           ))}
 
           {days.map((day) => {
-            const isToday = isCurrentMonth && day === currentDay
             const dayHasUpdate = hasUpdate(day)
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
             const formattedDate = formatLocalDate(date)
