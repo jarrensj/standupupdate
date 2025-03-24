@@ -116,11 +116,6 @@ export default function Calendar() {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const emptyCells = Array.from({ length: firstDayOfMonth }, (_, i) => i)
 
-  const today = new Date()
-  const isCurrentMonth =
-    today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear()
-  const currentDay = today.getDate()
-
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   const hasUpdate = (day: number) => {
@@ -133,7 +128,9 @@ export default function Calendar() {
     const formattedDate = formatLocalDate(date)
     
     if (!datesWithUpdates.has(formattedDate)) {
-      return;
+      setSelectedDay(formattedDate)
+      setSelectedDayUpdate(null)
+      return
     }
     
     if (selectedDay === formattedDate) {
@@ -178,7 +175,6 @@ export default function Calendar() {
           ))}
 
           {days.map((day) => {
-            const isToday = isCurrentMonth && day === currentDay
             const dayHasUpdate = hasUpdate(day)
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
             const formattedDate = formatLocalDate(date)
@@ -188,15 +184,16 @@ export default function Calendar() {
               <div 
                 key={`day-${day}`} 
                 className="h-10 flex items-center justify-center p-1"
-                onClick={() => dayHasUpdate && handleDayClick(day)}
+                onClick={() => handleDayClick(day)}
               >
                 <div
                   className={cn(
                     "h-8 w-8 flex items-center justify-center text-sm rounded-full",
-                    isToday && "border-2 border-primary font-medium",
-                    dayHasUpdate && "bg-gray-200 cursor-pointer",
-                    isSelected && "bg-primary text-primary-foreground",
-                    !dayHasUpdate && !isToday && "hover:bg-muted"
+                    dayHasUpdate && "bg-blue-500 text-white cursor-pointer",
+                    isSelected && "bg-yellow-200 text-black",
+                    isSelected && dayHasUpdate && "outline outline-2 outline-blue-500",
+                    !dayHasUpdate && "hover:bg-muted",
+                    isSelected && "hover:text-black"
                   )}
                 >
                   {day}
@@ -223,7 +220,13 @@ export default function Calendar() {
               {selectedDayUpdate ? (
                 <p className="whitespace-pre-wrap">{selectedDayUpdate}</p>
               ) : (
-                <p className="text-muted-foreground">No notes for this day</p>
+                <p className="text-muted-foreground">
+                  No update found for {new Date(selectedDay + "T00:00:00").toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}.
+                </p>
               )}
             </CardContent>
           </Card>
