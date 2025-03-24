@@ -101,8 +101,10 @@ export default function Updates() {
         </Link>
       </div>
       <SignedIn>
-        <h1 className="text-3xl font-bold mb-8">Standup Updates</h1>
-        <Calendar />
+        <div className="flex flex-col items-center">
+          <h1 className="text-3xl font-bold mb-8">Standup Updates</h1>
+          <Calendar />
+        </div>
         
         <div className="mt-12">
           <h2 className="text-2xl font-semibold mb-4">Previous StandupUpdates</h2>
