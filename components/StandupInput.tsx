@@ -25,7 +25,7 @@ interface StandupUpdate {
 export default function StandupInput() {
   const { user, isLoaded } = useUser()
   const [update, setUpdate] = useState('')
-  const [savedUpdate, setSavedUpdate] = useState<StandupUpdate | null>(null)
+  const [savedUpdates, setSavedUpdates] = useState<StandupUpdate[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [showLatestUpdate, setShowLatestUpdate] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -53,15 +53,15 @@ export default function StandupInput() {
       const response = await fetch(`/api/updates?user_id=${user.id}`);
       const data = await response.json();
       if (data.length > 0) {
-        setSavedUpdate(data[0]);
+        setSavedUpdates(data.slice(0, 7));
         setIsEditing(false);
         setUpdate('');
       } else {
-        setSavedUpdate(null);
+        setSavedUpdates([]);
       }
     } catch (error) {
       console.error('Error fetching updates:', error);
-      setSavedUpdate(null);
+      setSavedUpdates([]);
     } finally {
       setIsLoading(false);
     }
@@ -73,9 +73,9 @@ export default function StandupInput() {
     if (!user) {
       const savedData = localStorage.getItem('standupUpdate');
       if (savedData) {
-        setSavedUpdate(JSON.parse(savedData));
+        setSavedUpdates(JSON.parse(savedData));
       } else {
-        setSavedUpdate(null);
+        setSavedUpdates([]);
       }
       setIsEditing(false);
       setIsLoading(false);
@@ -89,7 +89,7 @@ export default function StandupInput() {
     const now = new Date().toISOString();
     const updateData: StandupUpdate = {
       text: update,
-      created_at: savedUpdate?.created_at || now,
+      created_at: savedUpdates[0]?.created_at || now,
       date: new Date(selectedDate).toISOString(),
       user_id: user?.id,
       ...(isEditing ? { updated_at: now } : {})
@@ -104,7 +104,7 @@ export default function StandupInput() {
             text: update,
             user_id: user.id,
             date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
-            ...(isEditing && savedUpdate?.id && { id: savedUpdate.id }),
+            ...(isEditing && savedUpdates[0]?.id && { id: savedUpdates[0].id }),
           }),
         });
 
@@ -112,7 +112,7 @@ export default function StandupInput() {
         await fetchUserUpdates();
       } else {
         localStorage.setItem('standupUpdate', JSON.stringify(updateData));
-        setSavedUpdate(updateData);
+        setSavedUpdates([updateData]);
       }
 
       setUpdate('');
@@ -130,23 +130,23 @@ export default function StandupInput() {
   }
 
   const handleEdit = () => {
-    if (savedUpdate) {
-      setUpdate(savedUpdate.text);
+    if (savedUpdates.length > 0) {
+      setUpdate(savedUpdates[0].text);
       setIsEditing(true);
     }
   };
 
   const handleDelete = async () => {
     try {
-      if (user && savedUpdate?.id) {
-        const response = await fetch(`/api/updates?id=${savedUpdate.id}&user_id=${user.id}`, {
+      if (user && savedUpdates[0]?.id) {
+        const response = await fetch(`/api/updates?id=${savedUpdates[0].id}&user_id=${user.id}`, {
           method: 'DELETE',
         });
         if (!response.ok) throw new Error('Failed to delete update');
       } else {
         localStorage.removeItem('standupUpdate');
       }
-      setSavedUpdate(null);
+      setSavedUpdates([]);
     } catch (error) {
       console.error('Error deleting update:', error);
     }
@@ -450,7 +450,7 @@ export default function StandupInput() {
                 </div>
               </div>
               
-              {savedUpdate && (
+              {savedUpdates.length > 0 && (
                 <div className="mt-6 border-t pt-4">
                   <button
                     onClick={() => setShowLatestUpdate(!showLatestUpdate)}
@@ -461,14 +461,7 @@ export default function StandupInput() {
                         <ChevronDown className="h-4 w-4 transition-transform" /> : 
                         <ChevronRight className="h-4 w-4 transition-transform" />
                       }
-                      <span className="font-medium">Last Update</span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(savedUpdate.date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
+                      <span className="font-medium">Previous Updates</span>
                     </div>
                     <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                       {showLatestUpdate ? "Click to hide" : "Click to view"}
@@ -480,45 +473,48 @@ export default function StandupInput() {
                       showLatestUpdate ? 'max-h-[500px] opacity-100 mt-3' : 'max-h-0 opacity-0'
                     }`}
                   >
-                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-muted-foreground">
-                          {new Date(savedUpdate.date).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </h3>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-7 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit();
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete();
-                            }}
-                          >
-                            Delete
-                          </Button>
+                    {savedUpdates.map((update, index) => (
+                      <div key={index} className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md border border-slate-100 dark:border-slate-800 mb-3">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-medium text-muted-foreground">
+                            {new Date(update.date).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              month: 'long',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </h3>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-7 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUpdate(update.text);
+                                setIsEditing(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete();
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
+                          <p className="whitespace-pre-wrap text-muted-foreground">{update.text}</p>
                         </div>
                       </div>
-                      <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
-                        <p className="whitespace-pre-wrap text-muted-foreground">{savedUpdate.text}</p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               )}
