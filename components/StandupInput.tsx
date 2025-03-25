@@ -502,17 +502,38 @@ export default function StandupInput() {
                           >
                             Edit
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete();
-                            }}
-                          >
-                            Delete
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete update?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this update? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <Button 
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete();
+                                  }}
+                                >
+                                  Confirm
+                                </Button>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                       <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
