@@ -38,6 +38,7 @@ export default function StandupInput() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [isFormatting, setIsFormatting] = useState<boolean>(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -147,6 +148,7 @@ export default function StandupInput() {
         localStorage.removeItem('standupUpdate');
       }
       setSavedUpdates([]);
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting update:', error);
     }
@@ -503,7 +505,7 @@ export default function StandupInput() {
                               className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete();
+                                setIsDeleteDialogOpen(true);
                               }}
                             >
                               Delete
@@ -529,6 +531,21 @@ export default function StandupInput() {
           </Link>
         </div>
       )}
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete update?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this update? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
