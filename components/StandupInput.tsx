@@ -53,6 +53,7 @@ export default function StandupInput() {
       const response = await fetch(`/api/updates?user_id=${user.id}`);
       const data = await response.json();
       if (data.length > 0) {
+        data.sort((a: StandupUpdate, b: StandupUpdate) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setSavedUpdate(data[0]);
         setIsEditing(false);
         setUpdate('');
