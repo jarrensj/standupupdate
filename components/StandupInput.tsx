@@ -466,48 +466,50 @@ export default function StandupInput() {
                       showLatestUpdate ? 'max-h-[500px] opacity-100 mt-3' : 'max-h-0 opacity-0'
                     }`}
                   >
-                    {savedUpdates.map((update, index) => (
-                      <div key={index} className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md border border-slate-100 dark:border-slate-800 mb-3">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-sm font-medium text-muted-foreground">
-                            {new Date(update.date).toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </h3>
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              className="h-7 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setUpdate(update.text);
-                                setIsEditing(true);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete();
-                              }}
-                            >
-                              Delete
-                            </Button>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {savedUpdates.map((update, index) => (
+                        <div key={index} className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md border border-slate-100 dark:border-slate-800 mb-3">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-medium text-muted-foreground">
+                              {new Date(update.date).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </h3>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUpdate(update.text);
+                                  setIsEditing(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete();
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
+                            <p className="whitespace-pre-wrap text-muted-foreground">{update.text}</p>
                           </div>
                         </div>
-                        <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
-                          <p className="whitespace-pre-wrap text-muted-foreground">{update.text}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
