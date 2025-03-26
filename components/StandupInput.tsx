@@ -41,6 +41,7 @@ export default function StandupInput() {
   const [showEditNotification, setShowEditNotification] = useState(false);
   const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [updateToDelete, setUpdateToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -532,6 +533,7 @@ export default function StandupInput() {
                                     className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      setUpdateToDelete(update.id!);
                                       setIsDeleteDialogOpen(true);
                                     }}
                                   >
@@ -551,7 +553,10 @@ export default function StandupInput() {
                                       variant="destructive"
                                       onClick={async (e) => {
                                         e.stopPropagation();
-                                        await handleDelete(update.id!);
+                                        if (updateToDelete) {
+                                          await handleDelete(updateToDelete);
+                                          setUpdateToDelete(null);
+                                        }
                                         setIsDeleteDialogOpen(false);
                                       }}
                                     >
