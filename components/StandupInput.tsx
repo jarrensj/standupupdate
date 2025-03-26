@@ -25,11 +25,10 @@ interface StandupUpdate {
 export default function StandupInput() {
   const { user, isLoaded } = useUser()
   const [update, setUpdate] = useState('')
-  const [savedUpdate, setSavedUpdate] = useState<StandupUpdate | null>(null)
+  const [savedUpdates, setSavedUpdates] = useState<StandupUpdate[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [showLatestUpdate, setShowLatestUpdate] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -39,6 +38,9 @@ export default function StandupInput() {
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [isFormatting, setIsFormatting] = useState<boolean>(false);
   const [showEditNotification, setShowEditNotification] = useState(false);
+  const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [updateToDelete, setUpdateToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -55,15 +57,15 @@ export default function StandupInput() {
       const data = await response.json();
       if (data.length > 0) {
         data.sort((a: StandupUpdate, b: StandupUpdate) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setSavedUpdate(data[0]);
+        setSavedUpdates(data.slice(0, 7));
         setIsEditing(false);
         setUpdate('');
       } else {
-        setSavedUpdate(null);
+        setSavedUpdates([]);
       }
     } catch (error) {
       console.error('Error fetching updates:', error);
-      setSavedUpdate(null);
+      setSavedUpdates([]);
     } finally {
       setIsLoading(false);
     }
@@ -75,9 +77,9 @@ export default function StandupInput() {
     if (!user) {
       const savedData = localStorage.getItem('standupUpdate');
       if (savedData) {
-        setSavedUpdate(JSON.parse(savedData));
+        setSavedUpdates(JSON.parse(savedData));
       } else {
-        setSavedUpdate(null);
+        setSavedUpdates([]);
       }
       setIsEditing(false);
       setIsLoading(false);
@@ -89,10 +91,17 @@ export default function StandupInput() {
 
   const handleSave = async () => {
     const now = new Date().toISOString();
+    const date = new Date(selectedYear, selectedMonth, selectedDay);
+    date.setUTCHours(0, 0, 0, 0);
+    
+    const updateBeingEdited = editingUpdateId 
+      ? savedUpdates.find(update => update.id === editingUpdateId)
+      : null;
+
     const updateData: StandupUpdate = {
       text: update,
-      created_at: savedUpdate?.created_at || now,
-      date: new Date(selectedDate).toISOString(),
+      created_at: updateBeingEdited?.created_at || now,
+      date: date.toISOString(),
       user_id: user?.id,
       ...(isEditing ? { updated_at: now } : {})
     };
@@ -105,16 +114,17 @@ export default function StandupInput() {
           body: JSON.stringify({
             text: update,
             user_id: user.id,
-            date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
-            ...(isEditing && savedUpdate?.id && { id: savedUpdate.id }),
+            date: date.toISOString(),
+            ...(isEditing && editingUpdateId && { id: editingUpdateId }),
           }),
         });
 
         if (!response.ok) throw new Error('Failed to save update');
         await fetchUserUpdates();
+        setEditingUpdateId(null);
       } else {
         localStorage.setItem('standupUpdate', JSON.stringify(updateData));
-        setSavedUpdate(updateData);
+        setSavedUpdates([updateData]);
       }
 
       setUpdate('');
@@ -131,33 +141,39 @@ export default function StandupInput() {
     }
   }
 
-  const handleEdit = () => {
-    if (savedUpdate) {
-      setUpdate(savedUpdate.text);
-      setIsEditing(true);
-      
-      setShowEditNotification(true);
-      setTimeout(() => setShowEditNotification(false), 3000);
-
-      const updateDate = new Date(savedUpdate.date);
-      setSelectedDate(updateDate.toISOString().split('T')[0]);
-      setSelectedMonth(updateDate.getMonth());
-      setSelectedDay(updateDate.getDate());
-      setSelectedYear(updateDate.getFullYear());
-    }
+  const handleEdit = (updateToEdit: StandupUpdate) => {
+    setUpdate(updateToEdit.text);
+    setIsEditing(true);
+    setEditingUpdateId(updateToEdit.id || null);
+    
+    setShowEditNotification(true);
+    setTimeout(() => setShowEditNotification(false), 3000);
+  
+    const updateDate = new Date(updateToEdit.date);
+    setSelectedMonth(updateDate.getMonth());
+    setSelectedDay(updateDate.getDate());
+    setSelectedYear(updateDate.getFullYear());
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (updateId: string) => {
     try {
-      if (user && savedUpdate?.id) {
-        const response = await fetch(`/api/updates?id=${savedUpdate.id}&user_id=${user.id}`, {
+      if (user) {
+        const response = await fetch(`/api/updates?id=${updateId}&user_id=${user.id}`, {
           method: 'DELETE',
         });
         if (!response.ok) throw new Error('Failed to delete update');
+        
+        setSavedUpdates(prev => prev.filter(update => update.id !== updateId));
+        
+        if (editingUpdateId === updateId) {
+          setIsEditing(false);
+          setUpdate('');
+          setEditingUpdateId(null);
+        }
       } else {
         localStorage.removeItem('standupUpdate');
+        setSavedUpdates([]);
       }
-      setSavedUpdate(null);
     } catch (error) {
       console.error('Error deleting update:', error);
     }
@@ -302,7 +318,6 @@ export default function StandupInput() {
                   value={selectedMonth.toString()}
                   onValueChange={(value) => {
                     setSelectedMonth(parseInt(value));
-                    setSelectedDate(new Date(selectedYear, parseInt(value), selectedDay).toISOString().split('T')[0]);
                   }}
                 >
                   <SelectTrigger className="w-full sm:w-[200px]">
@@ -321,7 +336,6 @@ export default function StandupInput() {
                   value={selectedDay.toString()}
                   onValueChange={(value) => {
                     setSelectedDay(parseInt(value));
-                    setSelectedDate(new Date(selectedYear, selectedMonth, parseInt(value)).toISOString().split('T')[0]);
                   }}
                 >
                   <SelectTrigger className="w-[100px]">
@@ -340,7 +354,6 @@ export default function StandupInput() {
                   value={selectedYear.toString()}
                   onValueChange={(value) => {
                     setSelectedYear(parseInt(value));
-                    setSelectedDate(new Date(parseInt(value), selectedMonth, selectedDay).toISOString().split('T')[0]);
                   }}
                 >
                   <SelectTrigger className="w-[120px]">
@@ -458,6 +471,7 @@ export default function StandupInput() {
                       onClick={() => {
                         setIsEditing(false);
                         setUpdate('');
+                        setEditingUpdateId(null);
                       }}
                     >
                       Cancel
@@ -466,7 +480,7 @@ export default function StandupInput() {
                 </div>
               </div>
               
-              {savedUpdate && (
+              {savedUpdates.length > 0 && (
                 <div className="mt-6 border-t pt-4">
                   <button
                     onClick={() => setShowLatestUpdate(!showLatestUpdate)}
@@ -477,14 +491,7 @@ export default function StandupInput() {
                         <ChevronDown className="h-4 w-4 transition-transform" /> : 
                         <ChevronRight className="h-4 w-4 transition-transform" />
                       }
-                      <span className="font-medium">Last Update</span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(savedUpdate.date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
+                      <span className="font-medium">Previous Updates</span>
                     </div>
                     <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                       {showLatestUpdate ? "Click to hide" : "Click to view"}
@@ -496,65 +503,78 @@ export default function StandupInput() {
                       showLatestUpdate ? 'max-h-[500px] opacity-100 mt-3' : 'max-h-0 opacity-0'
                     }`}
                   >
-                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-muted-foreground">
-                          {new Date(savedUpdate.date).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </h3>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-7 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit();
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {savedUpdates.map((update, index) => (
+                        <div key={index} className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md border border-slate-100 dark:border-slate-800 mb-3">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-medium text-muted-foreground">
+                              {new Date(update.date).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric',
+                                timeZone: 'UTC'
+                              })}
+                            </h3>
+                            <div className="flex gap-2">
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
-                                className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                                onClick={(e) => e.stopPropagation()}
+                                className="h-7 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(update);
+                                }}
                               >
-                                Delete
+                                Edit
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete update?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this update? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <Button 
-                                  variant="destructive"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete();
-                                  }}
-                                >
-                                  Confirm
-                                </Button>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                              <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setUpdateToDelete(update.id!);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete update?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete this update? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <Button 
+                                      variant="destructive"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (updateToDelete) {
+                                          await handleDelete(updateToDelete);
+                                          setUpdateToDelete(null);
+                                        }
+                                        setIsDeleteDialogOpen(false);
+                                      }}
+                                    >
+                                      Confirm
+                                    </Button>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                          <div className="text-sm whitespace-pre-wrap">
+                            {update.text}
+                          </div>
                         </div>
-                      </div>
-                      <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
-                        <p className="whitespace-pre-wrap text-muted-foreground">{savedUpdate.text}</p>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
