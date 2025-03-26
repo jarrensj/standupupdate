@@ -135,8 +135,15 @@ export default function StandupInput() {
     if (savedUpdate) {
       setUpdate(savedUpdate.text);
       setIsEditing(true);
+      
       setShowEditNotification(true);
       setTimeout(() => setShowEditNotification(false), 3000);
+
+      const updateDate = new Date(savedUpdate.date);
+      setSelectedDate(updateDate.toISOString().split('T')[0]);
+      setSelectedMonth(updateDate.getMonth());
+      setSelectedDay(updateDate.getDate());
+      setSelectedYear(updateDate.getFullYear());
     }
   };
 
