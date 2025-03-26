@@ -29,7 +29,6 @@ export default function StandupInput() {
   const [isEditing, setIsEditing] = useState(false)
   const [showLatestUpdate, setShowLatestUpdate] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -92,10 +91,17 @@ export default function StandupInput() {
 
   const handleSave = async () => {
     const now = new Date().toISOString();
+    const date = new Date(selectedYear, selectedMonth, selectedDay);
+    date.setUTCHours(0, 0, 0, 0);
+    
+    const updateBeingEdited = editingUpdateId 
+      ? savedUpdates.find(update => update.id === editingUpdateId)
+      : null;
+
     const updateData: StandupUpdate = {
       text: update,
-      created_at: savedUpdates[0]?.created_at || now,
-      date: new Date(selectedDate).toISOString(),
+      created_at: updateBeingEdited?.created_at || now,
+      date: date.toISOString(),
       user_id: user?.id,
       ...(isEditing ? { updated_at: now } : {})
     };
@@ -108,7 +114,7 @@ export default function StandupInput() {
           body: JSON.stringify({
             text: update,
             user_id: user.id,
-            date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
+            date: date.toISOString(),
             ...(isEditing && editingUpdateId && { id: editingUpdateId }),
           }),
         });
@@ -144,7 +150,6 @@ export default function StandupInput() {
     setTimeout(() => setShowEditNotification(false), 3000);
   
     const updateDate = new Date(updateToEdit.date);
-    setSelectedDate(updateDate.toISOString().split('T')[0]);
     setSelectedMonth(updateDate.getMonth());
     setSelectedDay(updateDate.getDate());
     setSelectedYear(updateDate.getFullYear());
@@ -313,7 +318,6 @@ export default function StandupInput() {
                   value={selectedMonth.toString()}
                   onValueChange={(value) => {
                     setSelectedMonth(parseInt(value));
-                    setSelectedDate(new Date(selectedYear, parseInt(value), selectedDay).toISOString().split('T')[0]);
                   }}
                 >
                   <SelectTrigger className="w-full sm:w-[200px]">
@@ -332,7 +336,6 @@ export default function StandupInput() {
                   value={selectedDay.toString()}
                   onValueChange={(value) => {
                     setSelectedDay(parseInt(value));
-                    setSelectedDate(new Date(selectedYear, selectedMonth, parseInt(value)).toISOString().split('T')[0]);
                   }}
                 >
                   <SelectTrigger className="w-[100px]">
@@ -351,7 +354,6 @@ export default function StandupInput() {
                   value={selectedYear.toString()}
                   onValueChange={(value) => {
                     setSelectedYear(parseInt(value));
-                    setSelectedDate(new Date(parseInt(value), selectedMonth, selectedDay).toISOString().split('T')[0]);
                   }}
                 >
                   <SelectTrigger className="w-[120px]">
@@ -510,7 +512,8 @@ export default function StandupInput() {
                                 weekday: 'long',
                                 month: 'long',
                                 day: 'numeric',
-                                year: 'numeric'
+                                year: 'numeric',
+                                timeZone: 'UTC'
                               })}
                             </h3>
                             <div className="flex gap-2">
