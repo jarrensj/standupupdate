@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "standup update",
+  title: "gmatcha",
   description: "a simple tool to help you keep track of your standup updates",
 };
 
