@@ -38,6 +38,9 @@ export default function StandupInput() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [isFormatting, setIsFormatting] = useState<boolean>(false);
+  const [showEditNotification, setShowEditNotification] = useState(false);
+  const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -105,12 +108,13 @@ export default function StandupInput() {
             text: update,
             user_id: user.id,
             date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
-            ...(isEditing && savedUpdates[0]?.id && { id: savedUpdates[0].id }),
+            ...(isEditing && editingUpdateId && { id: editingUpdateId }),
           }),
         });
 
         if (!response.ok) throw new Error('Failed to save update');
         await fetchUserUpdates();
+        setEditingUpdateId(null);
       } else {
         localStorage.setItem('standupUpdate', JSON.stringify(updateData));
         setSavedUpdates([updateData]);
@@ -130,17 +134,40 @@ export default function StandupInput() {
     }
   }
 
-  const handleDelete = async () => {
+  const handleEdit = (updateToEdit: StandupUpdate) => {
+    setUpdate(updateToEdit.text);
+    setIsEditing(true);
+    setEditingUpdateId(updateToEdit.id || null);
+    
+    setShowEditNotification(true);
+    setTimeout(() => setShowEditNotification(false), 3000);
+  
+    const updateDate = new Date(updateToEdit.date);
+    setSelectedDate(updateDate.toISOString().split('T')[0]);
+    setSelectedMonth(updateDate.getMonth());
+    setSelectedDay(updateDate.getDate());
+    setSelectedYear(updateDate.getFullYear());
+  };
+
+  const handleDelete = async (updateId: string) => {
     try {
-      if (user && savedUpdates[0]?.id) {
-        const response = await fetch(`/api/updates?id=${savedUpdates[0].id}&user_id=${user.id}`, {
+      if (user) {
+        const response = await fetch(`/api/updates?id=${updateId}&user_id=${user.id}`, {
           method: 'DELETE',
         });
         if (!response.ok) throw new Error('Failed to delete update');
+        
+        setSavedUpdates(prev => prev.filter(update => update.id !== updateId));
+        
+        if (editingUpdateId === updateId) {
+          setIsEditing(false);
+          setUpdate('');
+          setEditingUpdateId(null);
+        }
       } else {
         localStorage.removeItem('standupUpdate');
+        setSavedUpdates([]);
       }
-      setSavedUpdates([]);
     } catch (error) {
       console.error('Error deleting update:', error);
     }
@@ -256,6 +283,11 @@ export default function StandupInput() {
 
   return (
     <div className="w-full max-w-4xl space-y-4">
+      {showEditNotification && (
+        <div className="fixed top-4 right-4 bg-blue-500 text-white p-3 rounded-md shadow-lg">
+          You are now editing an existing update.
+        </div>
+      )}
       <Card className="border-2 shadow-lg">
         <CardHeader className="pb-3 space-y-4">
           <div className="flex justify-between items-center w-full">
@@ -436,6 +468,7 @@ export default function StandupInput() {
                       onClick={() => {
                         setIsEditing(false);
                         setUpdate('');
+                        setEditingUpdateId(null);
                       }}
                     >
                       Cancel
@@ -486,27 +519,51 @@ export default function StandupInput() {
                                 className="h-7 text-xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setUpdate(update.text);
-                                  setIsEditing(true);
+                                  handleEdit(update);
                                 }}
                               >
                                 Edit
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete();
-                                }}
-                              >
-                                Delete
-                              </Button>
+                              <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete update?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete this update? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <Button 
+                                      variant="destructive"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        await handleDelete(update.id!);
+                                        setIsDeleteDialogOpen(false);
+                                      }}
+                                    >
+                                      Confirm
+                                    </Button>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </div>
-                          <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
-                            <p className="whitespace-pre-wrap text-muted-foreground">{update.text}</p>
+                          <div className="text-sm whitespace-pre-wrap">
+                            {update.text}
                           </div>
                         </div>
                       ))}
