@@ -38,6 +38,7 @@ export default function StandupInput() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [isFormatting, setIsFormatting] = useState<boolean>(false);
+  const [showEditNotification, setShowEditNotification] = useState(false);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -134,6 +135,8 @@ export default function StandupInput() {
     if (savedUpdate) {
       setUpdate(savedUpdate.text);
       setIsEditing(true);
+      setShowEditNotification(true);
+      setTimeout(() => setShowEditNotification(false), 3000);
     }
   };
 
@@ -263,6 +266,11 @@ export default function StandupInput() {
 
   return (
     <div className="w-full max-w-4xl space-y-4">
+      {showEditNotification && (
+        <div className="fixed top-4 right-4 bg-blue-500 text-white p-3 rounded-md shadow-lg">
+          You are now editing an existing update.
+        </div>
+      )}
       <Card className="border-2 shadow-lg">
         <CardHeader className="pb-3 space-y-4">
           <div className="flex justify-between items-center w-full">
