@@ -53,25 +53,12 @@ export default function Calendar() {
     const fetchDatesWithUpdates = async () => {
       setIsLoading(true)
       try {
-        const localFirstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-        const localLastDay = new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1,
-          0,
-          23,
-          59,
-          59,
-          999
-        )
-
-        const startUTC = new Date(localFirstDay.getTime() - localFirstDay.getTimezoneOffset() * 60000)
-        const endUTC = new Date(localLastDay.getTime() - localLastDay.getTimezoneOffset() * 60000)
-
-        const startUTCISO = startUTC.toISOString()
-        const endUTCISO = endUTC.toISOString()
+        const startDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`;
+        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+        const endDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
         const response = await fetch(
-          `/api/updates?user_id=${encodeURIComponent(user.id)}&start_date=${encodeURIComponent(startUTCISO)}&end_date=${encodeURIComponent(endUTCISO)}`
+          `/api/updates?user_id=${encodeURIComponent(user.id)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`
         )
 
         if (!response.ok) throw new Error("Failed to fetch update dates")
@@ -208,11 +195,15 @@ export default function Calendar() {
             <CardHeader className="pb-2">
               <CardDescription>
                 <div className="font-semibold text-foreground">
-                  {new Date(selectedDay + "T00:00:00").toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
+                  {(() => {
+                    const [year, month, day] = selectedDay.split('-').map(Number);
+                    const date = new Date(year, month - 1, day);
+                    return date.toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    });
+                  })()}
                 </div>
               </CardDescription>
             </CardHeader>

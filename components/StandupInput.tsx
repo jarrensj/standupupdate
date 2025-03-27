@@ -97,8 +97,8 @@ export default function StandupInput() {
 
   const handleSave = async () => {
     const now = new Date().toISOString();
-    const date = new Date(selectedYear, selectedMonth, selectedDay);
-    date.setUTCHours(0, 0, 0, 0);
+    
+    const date = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
     
     const updateBeingEdited = editingUpdateId 
       ? savedUpdates.find(update => update.id === editingUpdateId)
@@ -107,7 +107,7 @@ export default function StandupInput() {
     const updateData: StandupUpdate = {
       text: update,
       created_at: updateBeingEdited?.created_at || now,
-      date: date.toISOString(),
+      date: date,
       user_id: user?.id,
       ...(isEditing ? { updated_at: now } : {})
     };
@@ -120,7 +120,7 @@ export default function StandupInput() {
           body: JSON.stringify({
             text: update,
             user_id: user.id,
-            date: date.toISOString(),
+            date: date,
             ...(isEditing && editingUpdateId && { id: editingUpdateId }),
           }),
         });
@@ -148,20 +148,21 @@ export default function StandupInput() {
   }
 
   const handleEdit = (updateToEdit: StandupUpdate) => {
-    const updateDate = new Date(updateToEdit.date);
+    const [year, month, day] = updateToEdit.date.split('-').map(Number);
+    
     setUpdate(updateToEdit.text);
     setOriginalText(updateToEdit.text);
     setOriginalDate({
-      month: updateDate.getMonth(),
-      day: updateDate.getDate(),
-      year: updateDate.getFullYear()
+      month: month - 1,
+      day: day,
+      year: year
     });
     setIsEditing(true);
     setEditingUpdateId(updateToEdit.id || null);
     
-    setSelectedMonth(updateDate.getMonth());
-    setSelectedDay(updateDate.getDate());
-    setSelectedYear(updateDate.getFullYear());
+    setSelectedMonth(month - 1);
+    setSelectedDay(day);
+    setSelectedYear(year);
     
     setShowEditNotification(true);
     setTimeout(() => setShowEditNotification(false), 3000);
@@ -536,13 +537,16 @@ export default function StandupInput() {
                         <div key={index} className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md border border-slate-100 dark:border-slate-800 mb-3">
                           <div className="flex items-center justify-between mb-3">
                             <h3 className="text-sm font-medium text-muted-foreground">
-                              {new Date(update.date).toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                month: 'long',
-                                day: 'numeric',
-                                year: 'numeric',
-                                timeZone: 'UTC'
-                              })}
+                              {(() => {
+                                const [year, month, day] = update.date.split('-').map(Number);
+                                const date = new Date(year, month - 1, day);
+                                return date.toLocaleDateString('en-US', {
+                                  weekday: 'long',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                });
+                              })()}
                             </h3>
                             <div className="flex gap-2">
                               <Button 

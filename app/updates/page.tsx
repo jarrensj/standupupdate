@@ -13,7 +13,7 @@ interface Update {
   id: number;
   created_at: Date;
   updated_at: Date;
-  date: Date;
+  date: string;
   text: string;
   user_id: string;
 }
@@ -49,7 +49,7 @@ export default function Updates() {
     }
   };
 
-  const handleEdit = async (updatedText: string, updatedDate: string | Date) => {
+  const handleEdit = async (updatedText: string, updatedDate: string) => {
     if (!editingUpdate || !user) return;
     
     setIsLoading(true);
@@ -60,7 +60,7 @@ export default function Updates() {
         body: JSON.stringify({ 
           id: editingUpdate.id, 
           text: updatedText, 
-          date: typeof updatedDate === 'string' ? updatedDate : updatedDate.toISOString(),
+          date: updatedDate,
           user_id: user.id 
         }),
       });
@@ -116,12 +116,15 @@ export default function Updates() {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardDescription>
                       <div className="font-semibold text-foreground">
-                        {new Date(update.date).toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric',
-                          timeZone: 'UTC'
-                        })}
+                        {(() => {
+                          const [year, month, day] = update.date.split('-').map(Number);
+                          const date = new Date(year, month - 1, day);
+                          return date.toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric'
+                          });
+                        })()}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Created: {new Date(update.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}
@@ -174,8 +177,8 @@ export default function Updates() {
                         />
                         <input
                           type="date"
-                          value={editingUpdate ? new Date(editingUpdate.date).toISOString().split('T')[0] : ''}
-                          onChange={(e) => setEditingUpdate({ ...editingUpdate, date: new Date(e.target.value) })}
+                          value={editingUpdate?.date || ''}
+                          onChange={(e) => setEditingUpdate({ ...editingUpdate, date: e.target.value })}
                           className="border p-2"
                         />
                         <div className="flex gap-2">
