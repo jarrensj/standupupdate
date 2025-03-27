@@ -477,7 +477,17 @@ export default function StandupInput() {
                       selectedDay === originalDate?.day &&
                       selectedYear === originalDate?.year
                     )} 
-                    className="w-full sm:w-32"
+                    className={`w-full sm:w-32 transition-colors ${
+                      !update.trim() || (
+                        isEditing &&
+                        update === originalText &&
+                        selectedMonth === originalDate?.month &&
+                        selectedDay === originalDate?.day &&
+                        selectedYear === originalDate?.year
+                      )
+                        ? 'bg-green-100 hover:bg-green-100 text-green-700 cursor-not-allowed'
+                        : 'bg-green-700 hover:bg-green-900 text-white'
+                    }`}
                   >
                     {isEditing ? 'Save Edit' : 'Save Update'}
                   </Button>
