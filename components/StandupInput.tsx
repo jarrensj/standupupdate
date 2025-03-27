@@ -41,6 +41,12 @@ export default function StandupInput() {
   const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [updateToDelete, setUpdateToDelete] = useState<string | null>(null);
+  const [originalText, setOriginalText] = useState<string>('');
+  const [originalDate, setOriginalDate] = useState<{
+    month: number;
+    day: number;
+    year: number;
+  } | null>(null);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -142,17 +148,23 @@ export default function StandupInput() {
   }
 
   const handleEdit = (updateToEdit: StandupUpdate) => {
+    const updateDate = new Date(updateToEdit.date);
     setUpdate(updateToEdit.text);
+    setOriginalText(updateToEdit.text);
+    setOriginalDate({
+      month: updateDate.getMonth(),
+      day: updateDate.getDate(),
+      year: updateDate.getFullYear()
+    });
     setIsEditing(true);
     setEditingUpdateId(updateToEdit.id || null);
     
-    setShowEditNotification(true);
-    setTimeout(() => setShowEditNotification(false), 3000);
-  
-    const updateDate = new Date(updateToEdit.date);
     setSelectedMonth(updateDate.getMonth());
     setSelectedDay(updateDate.getDate());
     setSelectedYear(updateDate.getFullYear());
+    
+    setShowEditNotification(true);
+    setTimeout(() => setShowEditNotification(false), 3000);
   };
 
   const handleDelete = async (updateId: string) => {
@@ -458,7 +470,13 @@ export default function StandupInput() {
                   <Button 
                     size="lg" 
                     onClick={handleSave} 
-                    disabled={!update.trim()} 
+                    disabled={!update.trim() || (
+                      isEditing && 
+                      update === originalText && 
+                      selectedMonth === originalDate?.month &&
+                      selectedDay === originalDate?.day &&
+                      selectedYear === originalDate?.year
+                    )} 
                     className="w-full sm:w-32"
                   >
                     {isEditing ? 'Save Edit' : 'Save Update'}
