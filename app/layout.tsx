@@ -30,7 +30,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased relative`}
       >
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 z-50">
           <SignedIn>
             <UserButton />
           </SignedIn>
