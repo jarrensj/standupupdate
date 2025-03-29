@@ -1,19 +1,18 @@
-import StandupInput from "../components/StandupInput";
-import Footer from "../components/Footer";
+'use client'
+
+import StandupInput from "../components/StandupInput"
+import MatchaBackground from "../components/MatchaBackground"
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-100">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <h1 className="text-4xl font-bold">
-          gmatcha
-        </h1>
-        <p className="text-lg">
-          a simple tool to help you keep track of your standup updates
-        </p>
+    <main className="relative min-h-screen w-full flex items-center justify-center">
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <MatchaBackground />
+      </div>
+
+      <div className="relative z-10 w-full max-w-4xl px-4">
         <StandupInput />
-      </main>
-      <Footer />
-    </div>
-  );
+      </div>
+    </main>
+  )
 }
