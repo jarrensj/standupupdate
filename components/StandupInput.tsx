@@ -7,11 +7,14 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import JSConfetti from 'js-confetti'
 import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FaMicrophoneAlt, FaMagic } from 'react-icons/fa'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ChevronDown, ChevronRight } from 'lucide-react'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { format } from 'date-fns'
+import { CalendarIcon } from 'lucide-react'
 
 interface StandupUpdate {
   id?: string;
@@ -47,6 +50,7 @@ export default function StandupInput() {
     day: number;
     year: number;
   } | null>(null);
+  const [date, setDate] = useState<Date>(new Date())
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -95,10 +99,16 @@ export default function StandupInput() {
     }
   }, [user, isLoaded, fetchUserUpdates]);
 
+  useEffect(() => {
+    setSelectedMonth(date.getMonth());
+    setSelectedDay(date.getDate());
+    setSelectedYear(date.getFullYear());
+  }, [date]);
+
   const handleSave = async () => {
     const now = new Date().toISOString();
     
-    const date = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     
     const updateBeingEdited = editingUpdateId 
       ? savedUpdates.find(update => update.id === editingUpdateId)
@@ -107,7 +117,7 @@ export default function StandupInput() {
     const updateData: StandupUpdate = {
       text: update,
       created_at: updateBeingEdited?.created_at || now,
-      date: date,
+      date: dateStr,
       user_id: user?.id,
       ...(isEditing ? { updated_at: now } : {})
     };
@@ -120,7 +130,7 @@ export default function StandupInput() {
           body: JSON.stringify({
             text: update,
             user_id: user.id,
-            date: date,
+            date: dateStr,
             ...(isEditing && editingUpdateId && { id: editingUpdateId }),
           }),
         });
@@ -150,6 +160,13 @@ export default function StandupInput() {
   const handleEdit = (updateToEdit: StandupUpdate) => {
     const [year, month, day] = updateToEdit.date.split('-').map(Number);
     
+    const updateDate = new Date(year, month - 1, day);
+    setDate(updateDate);
+    
+    setSelectedMonth(month - 1);
+    setSelectedDay(day);
+    setSelectedYear(year);
+    
     setUpdate(updateToEdit.text);
     setOriginalText(updateToEdit.text);
     setOriginalDate({
@@ -159,10 +176,6 @@ export default function StandupInput() {
     });
     setIsEditing(true);
     setEditingUpdateId(updateToEdit.id || null);
-    
-    setSelectedMonth(month - 1);
-    setSelectedDay(day);
-    setSelectedYear(year);
     
     setShowEditNotification(true);
     setTimeout(() => setShowEditNotification(false), 3000);
@@ -190,38 +203,6 @@ export default function StandupInput() {
     } catch (error) {
       console.error('Error deleting update:', error);
     }
-  };
-
-  const generateMonthOptions = () => {
-    return [
-      { value: 0, label: 'January' },
-      { value: 1, label: 'February' },
-      { value: 2, label: 'March' },
-      { value: 3, label: 'April' },
-      { value: 4, label: 'May' },
-      { value: 5, label: 'June' },
-      { value: 6, label: 'July' },
-      { value: 7, label: 'August' },
-      { value: 8, label: 'September' },
-      { value: 9, label: 'October' },
-      { value: 10, label: 'November' },
-      { value: 11, label: 'December' }
-    ];
-  };
-
-  const generateDayOptions = () => {
-    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-    return Array.from({ length: daysInMonth }, (_, i) => ({
-      value: i + 1,
-      label: (i + 1).toString()
-    }));
-  };
-
-  const generateYearOptions = () => {
-    return [
-      { value: 2024, label: "2024" },
-      { value: 2025, label: "2025" }
-    ];
   };
 
   const startRecording = async (shouldAppend = false) => {
@@ -326,60 +307,33 @@ export default function StandupInput() {
             </div>
           ) : (
             <>
-              <div className="mb-6 flex flex-wrap gap-3">
-                <Select
-                  value={selectedMonth.toString()}
-                  onValueChange={(value) => {
-                    setSelectedMonth(parseInt(value));
-                  }}
-                >
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Select month" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {generateMonthOptions().map((month) => (
-                      <SelectItem key={month.value} value={month.value.toString()}>
-                        {month.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={selectedDay.toString()}
-                  onValueChange={(value) => {
-                    setSelectedDay(parseInt(value));
-                  }}
-                >
-                  <SelectTrigger className="w-[100px]">
-                    <SelectValue placeholder="Day" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {generateDayOptions().map((day) => (
-                      <SelectItem key={day.value} value={day.value.toString()}>
-                        {day.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={selectedYear.toString()}
-                  onValueChange={(value) => {
-                    setSelectedYear(parseInt(value));
-                  }}
-                >
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {generateYearOptions().map((year) => (
-                      <SelectItem key={year.value} value={year.value.toString()}>
-                        {year.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="mb-6">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-[300px] justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(date, "EEEE, MMMM d, yyyy")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={(newDate) => {
+                        if (newDate) {
+                          setDate(newDate);
+                          setSelectedMonth(newDate.getMonth());
+                          setSelectedDay(newDate.getDate());
+                          setSelectedYear(newDate.getFullYear());
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="relative">
                 <Textarea
