@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <main className="relative min-h-screen w-full flex flex-col">
       <div className="absolute inset-0 z-0 overflow-hidden">
-        <MatchaBackground />
+        <MatchaBackground key="home-background" />
       </div>
 
       <h1 className="absolute top-6 left-6 text-3xl font-bold z-20">gmatcha</h1>
