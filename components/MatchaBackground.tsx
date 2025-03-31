@@ -662,7 +662,7 @@ export default function MatchaBackground() {
   }
 
   return (
-    <div className="w-full h-screen relative">
+    <div className="w-full h-full absolute top-0 left-0 bottom-0 right-0">
       <canvas
         ref={canvasRef}
         className="w-full h-full absolute top-0 left-0"

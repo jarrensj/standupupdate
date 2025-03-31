@@ -13,7 +13,7 @@ export default function Home() {
 
       <h1 className="absolute top-6 left-6 text-3xl font-bold z-20">gmatcha</h1>
 
-      <div className="flex-grow flex items-center justify-center">
+      <div className="flex-grow flex items-center justify-center py-20">
         <div className="relative z-10 w-full max-w-4xl px-4">
           <StandupInput />
         </div>
