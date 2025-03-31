@@ -486,6 +486,10 @@ export default function MatchaBackground() {
   }
 
   useEffect(() => {
+    // reset animation state and reinitialize on component mount
+    isCleaningUpRef.current = false
+    isInitializedRef.current = false
+    
     // initial setup
     handleResize()
 
@@ -506,6 +510,12 @@ export default function MatchaBackground() {
       !fluidVelocityRef.current[0]?.length
     ) {
       return () => {}
+    }
+
+    // reset animation frame reference when starting new animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current)
+      animationRef.current = 0
     }
 
     let isActive = true
